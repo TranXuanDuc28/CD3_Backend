@@ -14,6 +14,7 @@ const spamPatterns = [
   { pattern_type: 'regex', pattern_value: '(http|https)://[^\\s]+', description: 'URL links' },
   { pattern_type: 'regex', pattern_value: '@[a-zA-Z0-9_]+', description: 'Mention tags' },
   
+  
   // Domains
   { pattern_type: 'domain', pattern_value: 'bit.ly', description: 'Shortened URL' },
   { pattern_type: 'domain', pattern_value: 'tinyurl.com', description: 'Shortened URL' },
