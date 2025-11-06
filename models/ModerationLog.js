@@ -20,6 +20,7 @@ module.exports = (sequelize) => {
     ]
   });
 
+  
   ModerationLog.associate = (models) => {
     ModerationLog.belongsTo(models.FacebookComment, { foreignKey: 'comment_id', targetKey: 'comment_id', as: 'comment' });
   };

@@ -26,6 +26,7 @@ module.exports = (sequelize) => {
     moderation_action: { type: DataTypes.ENUM('none','hide','delete','manual_review'), defaultValue: 'none' },
     moderated_at: { type: DataTypes.DATE, allowNull: true }
   }, {
+    
     tableName: 'comment_analysis',
     timestamps: false,
     indexes: [

@@ -20,6 +20,7 @@ module.exports = (sequelize) => {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
     },
+    
     ai_response: {
       type: DataTypes.TEXT,
       allowNull: true

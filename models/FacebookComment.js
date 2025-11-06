@@ -20,6 +20,7 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING(100),
       allowNull: true
     },
+    
     from_id: {
       type: DataTypes.STRING(100),
       allowNull: false

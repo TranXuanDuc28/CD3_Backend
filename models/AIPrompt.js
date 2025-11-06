@@ -13,6 +13,7 @@ class AIPrompt {
     const result = await db.query(sql, [promptName]);
     return result[0]?.system_message || '';
   }
+  
 
   // Get processed prompt with template data
   static async getProcessedPrompt(promptName = 'default_watch_sales', data = {}) {
