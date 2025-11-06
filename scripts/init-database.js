@@ -18,6 +18,7 @@ async function initDatabase() {
       multipleStatements: true
     });
 
+    
     console.log('✅ Connected to MySQL server');
 
     // Read and execute schema file

@@ -13,6 +13,7 @@ async function checkMySQLIndexes() {
       database: process.env.DB_NAME || 'fb_comment_db',
       port: process.env.DB_PORT || 3306
     });
+   
     
     console.log('🔍 Checking actual MySQL indexes...\n');
     

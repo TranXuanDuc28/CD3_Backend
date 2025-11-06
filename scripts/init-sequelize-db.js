@@ -19,6 +19,7 @@ const sequelize = new Sequelize({
   }
 });
 
+
 async function createDatabase() {
   try {
     // Connect without specifying database to create it

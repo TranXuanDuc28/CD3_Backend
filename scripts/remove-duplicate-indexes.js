@@ -16,6 +16,7 @@ async function removeDuplicateIndexes() {
     
     console.log('🧹 Removing duplicate indexes...\n');
     
+    
     // Tables with duplicate indexes
     const tablesToFix = [
       'facebook_comments',

@@ -19,6 +19,7 @@ async function initSentimentTables() {
       multipleStatements: true
     });
 
+    
     console.log('✅ Connected to database');
 
     // Read and execute SQL file
