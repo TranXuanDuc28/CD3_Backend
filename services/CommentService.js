@@ -242,23 +242,94 @@ class CommentService {
 
   // ✅ Lưu danh sách bài viết
   static async savePosts(postsData) {
+    const CHUNK_SIZE = parseInt(process.env.SAVE_POSTS_CHUNK_SIZE || '500', 10);
+
     try {
-      const results = [];
-      for (const post of postsData) {
-        try {
-          await FacebookPost.upsert({
-            post_id: post.post_id || post.id,
-            page_id: post.page_id,
-            content: post.content || post.message || '',
-            created_time: new Date(post.created_time),
-            fetched_at: new Date()
+      if (!Array.isArray(postsData) || postsData.length === 0) {
+        return { success: false, error: 'posts array is required', data: [] };
+      }
+
+      const normalizedPosts = [];
+      const skippedPosts = [];
+
+      const parseDate = (value) => {
+        if (!value) return new Date();
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+      };
+
+      postsData.forEach((rawPost, index) => {
+        const postId = rawPost?.post_id || rawPost?.id;
+        const pageId = rawPost?.page_id || rawPost?.from?.id;
+
+        if (!postId || !pageId) {
+          skippedPosts.push({
+            index,
+            post_id: postId || null,
+            reason: 'Missing post_id or page_id'
           });
-          results.push({ post_id: post.post_id || post.id, status: 'success' });
-        } catch (error) {
-          results.push({ post_id: post.post_id || post.id, status: 'error', error: error.message });
+          return;
+        }
+
+        normalizedPosts.push({
+          post_id: postId,
+          page_id: pageId,
+          content: rawPost?.content ?? rawPost?.message ?? rawPost?.caption ?? '',
+          created_time: parseDate(rawPost?.created_time),
+          fetched_at: parseDate(rawPost?.fetched_at)
+        });
+      });
+
+      if (!normalizedPosts.length) {
+        return { success: false, error: 'No valid posts to save', skipped: skippedPosts };
+      }
+
+      const results = [];
+      const chunkSize = Math.min(Math.max(CHUNK_SIZE, 50), 1000);
+      const updateFields = ['page_id', 'content', 'created_time', 'fetched_at'];
+      const startTime = Date.now();
+
+      for (let i = 0; i < normalizedPosts.length; i += chunkSize) {
+        const chunk = normalizedPosts.slice(i, i + chunkSize);
+        try {
+          await FacebookPost.bulkCreate(chunk, { updateOnDuplicate: updateFields });
+          chunk.forEach((post) => {
+            results.push({ post_id: post.post_id, status: 'success' });
+          });
+        } catch (bulkError) {
+          Logger.warn('Bulk save chunk failed, fallback to individual upserts', {
+            chunk_start: i,
+            chunk_size: chunk.length,
+            error: bulkError.message
+          });
+
+          for (const post of chunk) {
+            try {
+              await FacebookPost.upsert(post);
+              results.push({ post_id: post.post_id, status: 'success' });
+            } catch (error) {
+              results.push({ post_id: post.post_id, status: 'error', error: error.message });
+            }
+          }
         }
       }
-      return { success: true, data: results };
+
+      const successCount = results.filter((r) => r.status === 'success').length;
+      const errorCount = results.length - successCount;
+
+      return {
+        success: errorCount === 0,
+        data: results,
+        summary: {
+          total_received: postsData.length,
+          attempted: normalizedPosts.length,
+          saved: successCount,
+          failed: errorCount,
+          skipped: skippedPosts.length,
+          duration_ms: Date.now() - startTime
+        },
+        skipped: skippedPosts
+      };
     } catch (error) {
       Logger.error('SavePosts error', { error: error.message });
       return { success: false, error: error.message };

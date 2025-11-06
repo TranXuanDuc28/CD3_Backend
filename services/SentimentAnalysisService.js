@@ -165,18 +165,13 @@ class SentimentAnalysisService {
           keywords: []
         });
 
-        // Auto-hide spam comments
-        if (autoModerate) {
-          await ModerationService.hideComment(commentId);
-        }
-
         return {
           success: true,
           isToxic: false,
           isSpam: true,
           isDuplicate: false,
           shouldReply: false,
-          moderationAction: 'hide',
+          moderationAction: 'none',
           analysis: null
         };
       }

@@ -43,9 +43,6 @@ class ToxicDetectionService {
       if (maxSeverity >= 4.0) {
         // Very toxic → Delete
         moderationAction = 'delete';
-      } else if (maxSeverity >= 2.5) {
-        // Moderately toxic → Hide
-        moderationAction = 'hide';
       } else if (maxSeverity >= 1.5) {
         // Potentially toxic → Manual review
         moderationAction = 'manual_review';
@@ -134,7 +131,6 @@ class ToxicDetectionService {
       const data = {
         total_toxic: rows.length,
         deleted: rows.filter(r => r.moderation_action === 'delete').length,
-        hidden: rows.filter(r => r.moderation_action === 'hide').length,
         pending_review: rows.filter(r => r.moderation_action === 'manual_review').length,
         profanity_count: rows.filter(r => r.toxic_category === 'profanity').length,
         hate_speech_count: rows.filter(r => r.toxic_category === 'hate_speech').length,

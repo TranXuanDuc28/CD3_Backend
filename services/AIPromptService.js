@@ -7,6 +7,7 @@ class AIPromptService {
     return row?.system_message || '';
   }
 
+  
   static async getProcessedPrompt(promptName = 'default_watch_sales', data = {}) {
     const template = await this.getPrompt(promptName);
     const processed = TemplateEngine.processTemplate(template, data);
