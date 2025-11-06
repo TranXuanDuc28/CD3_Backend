@@ -17,6 +17,7 @@ class AnalyticsController {
     }
   }
 
+  
   // GET /api/analytics/sentiment-trend?days=30
   static async getSentimentTrend(req, res) {
     try {

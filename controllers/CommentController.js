@@ -15,6 +15,7 @@ class CommentController {
         });
       }
 
+      
       const sessionId = session_id || `session_${Date.now()}`;
       const result = await CommentService.processComments(comments, sessionId);
 

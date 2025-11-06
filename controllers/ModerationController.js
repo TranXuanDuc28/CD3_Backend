@@ -26,26 +26,6 @@ class ModerationController {
     }
   }
 
-  // POST /api/moderation/hide
-  static async hideComment(req, res) {
-    try {
-      const { comment_id } = req.body;
-      
-      if (!comment_id) {
-        return res.status(400).json({
-          success: false,
-          error: 'comment_id is required'
-        });
-      }
-
-      const result = await ModerationService.hideComment(comment_id);
-      res.json(result);
-    } catch (error) {
-      Logger.error('HideComment error', { error: error.message });
-      res.status(500).json({ success: false, error: error.message });
-    }
-  }
-
   // POST /api/moderation/delete
   static async deleteComment(req, res) {
     try {
@@ -62,26 +42,6 @@ class ModerationController {
       res.json(result);
     } catch (error) {
       Logger.error('DeleteComment error', { error: error.message });
-      res.status(500).json({ success: false, error: error.message });
-    }
-  }
-
-  // POST /api/moderation/restore
-  static async restoreComment(req, res) {
-    try {
-      const { comment_id } = req.body;
-      
-      if (!comment_id) {
-        return res.status(400).json({
-          success: false,
-          error: 'comment_id is required'
-        });
-      }
-
-      const result = await ModerationService.restoreComment(comment_id);
-      res.json(result);
-    } catch (error) {
-      Logger.error('RestoreComment error', { error: error.message });
       res.status(500).json({ success: false, error: error.message });
     }
   }
