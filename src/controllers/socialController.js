@@ -1,5 +1,5 @@
 const { Token } = require('../models');
-const SocialService = require('../services/social.service');
+const SocialService = require('../services/socialService');
 
 class SocialController {
   // POST /api/post-to-facebook

@@ -1,7 +1,7 @@
 const { Post } = require('../models');
 const n8nService = require('../services/n8nService');
 const PostsService = require('../services/postsService');
-const { generateEmbedding } = require('../services/gemini.service');
+const { generateEmbedding } = require('../services/geminiService');
 const TimezoneUtils = require('../utils/timezone');
 
 class PostsController {

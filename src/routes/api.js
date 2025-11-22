@@ -11,6 +11,8 @@ const uploadController = require('../controllers/uploadController');
 const socialController = require('../controllers/socialController');
 const engagementController = require('../controllers/engagementController');
 const mailController = require('../controllers/mailController');
+const generateController = require('../controllers/generateController');
+const ChatAIController = require('../controllers/chatAIController');
 // Example route
 router.get("/status", (req, res) => {
   res.json({ status: "API is running" });
@@ -42,16 +44,16 @@ router.post("/embed", postsController.createEmbeddings);
 
 module.exports = router;
 
-router.get('/comments', CommentController.list);
-router.get('/comments/stats', CommentController.getStats);
-router.get('/comments/recent', CommentController.getRecent);
+// router.get('/comments', CommentController.list);
+// router.get('/comments/stats', CommentController.getStats);
+// router.get('/comments/recent', CommentController.getRecent);
 router.post('/comments/process', CommentController.processComments);
 router.post('/comments/mark-handled', CommentController.markHandled);
 router.post('/comments/check-handled', CommentController.checkHandled);
 router.get('/comments/unhandled', CommentController.getUnhandled);
-router.get('/comments/:commentId/history', CommentController.getHistory);
-router.get('/comments/:commentId', CommentController.getComment);
-router.patch('/comments/:commentId/status', CommentController.updateStatus);
+// router.get('/comments/:commentId/history', CommentController.getHistory);
+// router.get('/comments/:commentId', CommentController.getComment);
+// router.patch('/comments/:commentId/status', CommentController.updateStatus);
 
 // Post routes
 router.post('/posts/save', CommentController.savePosts);

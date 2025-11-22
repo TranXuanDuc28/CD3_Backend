@@ -1,6 +1,6 @@
 const { FacebookPost, FacebookComment, HandledComment, ChatHistory } = require('../models');
 const AIPromptService = require('./AIPromptService');
-const { generateResponse } = require('../../CD3_Backend/config/gemini'); // Đảm bảo file gemini.js là bản đã sửa
+const { generateResponse } = require('../config/gemini'); // Đảm bảo file gemini.js là bản đã sửa
 const Logger = require('../utils/logger');
 const SentimentAnalysisService = require('./SentimentAnalysisService');
 

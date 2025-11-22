@@ -12,7 +12,7 @@ const removeAccents = require("remove-accents");
 const HUGGINGFACE_API_URL =
   "https://router.huggingface.co/together/v1/images/generations";
 const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY;
-console.log("Hugging Face API Key:", HUGGINGFACE_API_KEY);
+//console.log("Hugging Face API Key:", HUGGINGFACE_API_KEY);
 const cloudinary = require("cloudinary").v2;
 
 // Cấu hình Cloudinary

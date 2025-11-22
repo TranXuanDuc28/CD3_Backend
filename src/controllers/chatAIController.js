@@ -1,7 +1,7 @@
 const ChatAIService = require('../services/ChatAIService');
 const Logger = require('../utils/logger');
 
-class ChatAIController {
+class chatAIController {
   constructor() {
     this.chatAIService = new ChatAIService();
     this.logger = Logger;
@@ -372,4 +372,4 @@ class ChatAIController {
   }
 }
 
-module.exports = ChatAIController;
+module.exports = chatAIController;
