@@ -19,6 +19,7 @@ async function runAllSeeders() {
     await sequelize.sync({ force: false });
     console.log('✅ Database tables synced.');
     
+    
     // Run seeders in order
     await seedAIPrompts();
     console.log('✅ AI Prompts seeded.');
