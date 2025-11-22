@@ -1,8 +1,9 @@
-const axios = require('axios');
-require('dotenv').config();
+const axios = require("axios");
+require("dotenv").config();
 
 // Gemini API configuration
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent";
+const GEMINI_API_URL =
+  "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent";
 
 // Model configuration
 const modelConfig = {
@@ -12,7 +13,6 @@ const modelConfig = {
   maxOutputTokens: 1024,
 };
 
-
 // Safety settings
 const safetySettings = [
   {
@@ -20,7 +20,7 @@ const safetySettings = [
     threshold: "BLOCK_MEDIUM_AND_ABOVE",
   },
   {
-    category: "HARM_CATEGORY_HATE_SPEECH", 
+    category: "HARM_CATEGORY_HATE_SPEECH",
     threshold: "BLOCK_MEDIUM_AND_ABOVE",
   },
   {
@@ -42,14 +42,15 @@ async function generateResponse(userMessage, systemPrompt, chatHistory = []) {
     }
 
     // Build conversation history
-    const history = chatHistory.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }]
+    const history = chatHistory.map((msg) => ({
+      role: msg.role === "user" ? "user" : "model",
+      parts: [{ text: msg.content }],
     }));
 
     // Combine system prompt with user message
-    const vietnameseInstruction = "QUAN TRỌNG: Trả lời bằng tiếng Việt. Không bao giờ trả lời bằng tiếng Anh.\n\n";
-    const fullPrompt = systemPrompt 
+    const vietnameseInstruction =
+      "QUAN TRỌNG: Trả lời bằng tiếng Việt. Không bao giờ trả lời bằng tiếng Anh.\n\n";
+    const fullPrompt = systemPrompt
       ? `${vietnameseInstruction}${systemPrompt}\n\nTin nhắn từ khách hàng: ${userMessage}`
       : `${vietnameseInstruction}Tin nhắn từ khách hàng: ${userMessage}`;
 
@@ -59,11 +60,11 @@ async function generateResponse(userMessage, systemPrompt, chatHistory = []) {
         ...history,
         {
           role: "user",
-          parts: [{ text: fullPrompt }]
-        }
+          parts: [{ text: fullPrompt }],
+        },
       ],
       generationConfig: modelConfig,
-      safetySettings: safetySettings
+      safetySettings: safetySettings,
     };
 
     // Call Gemini API
@@ -117,11 +118,11 @@ async function generateSimpleResponse(userMessage, systemPrompt) {
       contents: [
         {
           role: "user",
-          parts: [{ text: fullPrompt }]
-        }
+          parts: [{ text: fullPrompt }],
+        },
       ],
       generationConfig: modelConfig,
-      safetySettings: safetySettings
+      safetySettings: safetySettings,
     };
 
     // Call Gemini API
