@@ -10,7 +10,6 @@ module.exports = (sequelize) => {
     facebook_id: {
       type: DataTypes.STRING(255),
       allowNull: false,
-      unique: true
     },
     first_name: {
       type: DataTypes.STRING(100),

@@ -13,9 +13,6 @@ const dbConfig = {
   queueLimit: 0,
   charset: 'utf8mb4',
   timezone: '+07:00', // Vietnam timezone (UTC+7)
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true
 };
 
 // Create connection pool

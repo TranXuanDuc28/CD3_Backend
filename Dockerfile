@@ -1,22 +1,29 @@
-# Base image
-FROM node:18-alpine
+# Stage 1: build app
+FROM node:18-alpine AS builder
 
-# Set working directory
-WORKDIR /duc/CD3_Backend
+WORKDIR /app
 
-# Copy package files
+# Copy package files & install dependencies
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
-
 RUN npm install -g @babel/core @babel/cli
 
-# Copy the rest of the project
+# Copy source & build
 COPY . .
-
-# Build app (Next.js sẽ tạo .next/)
 RUN npm run build-src
 
-# Start the app
-CMD ["npm","run", "build"]
+# Stage 2: production image
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy only built artifacts and dependencies
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/package*.json ./
+
+# Expose port backend
+EXPOSE 3000
+
+# Run app
+CMD ["npm", "run", "start"]
