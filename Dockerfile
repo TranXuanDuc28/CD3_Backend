@@ -2,7 +2,7 @@
 FROM node:18-alpine
 
 # Set working directory
-WORKDIR /duc/backend
+WORKDIR /duc/CD3_Backend
 
 # Copy package files
 COPY package*.json ./
