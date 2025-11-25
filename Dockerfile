@@ -19,7 +19,7 @@ WORKDIR /app
 
 # Copy only built artifacts and dependencies
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/build ./build
 COPY --from=builder /app/package*.json ./
 
 # Expose port backend
