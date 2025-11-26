@@ -36,6 +36,5 @@ jobs:
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           inputs: |
             {
-              "image_tag": "${GITHUB_SHA}",
               "service": "backend"
             }
