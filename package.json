@@ -7,7 +7,7 @@
         "start": "nodemon --exec babel-node src/server.js",
         "build-src": "babel src -d build --copy-files",
         "build": "node build/server.js",
-        "start:prod": "node dist/server.js",
+        "start:prod": "node build/server.js",
         "init-db": "node scripts/init-database.js",
         "init-sentiment": "node scripts/init-sentiment-tables.js",
         "init-toxic": "node scripts/init-toxic-tables.js",
