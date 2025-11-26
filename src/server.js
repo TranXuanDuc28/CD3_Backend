@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 // ======================
 // CORS cho phép nhiều domain
 // ======================
-const allowedOrigins = process.env.CLIENT_URLS
+const allowedOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(',').map(o => o.trim())
   : [];
 
