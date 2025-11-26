@@ -31,5 +31,5 @@ jobs:
           repository: TranXuanDuc28/CD3_Production
           workflow: deploy.yml
           ref: main
-          inputs: 
+          inputs:
             service: backend
