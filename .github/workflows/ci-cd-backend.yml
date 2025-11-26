@@ -2,7 +2,7 @@ name: Backend CI/CD
 
 on:
   push:
-    branches: [main, production]
+    branches: [main]
 
 jobs:
   build-and-push:
@@ -32,7 +32,7 @@ jobs:
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: deploy.yml
-          repo: yourusername/CD3_Production
+          repo: TranXuanDuc28/CD3_Production
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           inputs: |
             {
