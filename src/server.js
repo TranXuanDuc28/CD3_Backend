@@ -87,7 +87,7 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log('\n🚀 ========================================');
       console.log(`✅ Server chạy tại http://localhost:${PORT}`);
-      console.log(`🔐 CORS chỉ cho phép: ${allowedOrigin}`);
+      console.log(`🔐 CORS chỉ cho phép: ${allowedOrigins}`);
       console.log('🔗 ========================================\n');
     });
 
