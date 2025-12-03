@@ -70,12 +70,9 @@ class PostsController {
   // POST /api/posts/update-status
   async updatePostStatus(req, res) {
     try {
-      const { postId, post_id, status } = req.body;
-      console.log("postId", postId);
-      console.log("post_id", post_id);
-      console.log("status", status);
+      const { postId, facebook_post_id, instagram_post_id, status_facebook, status_instagram} = req.body;
 
-      const response = await PostsService.updatePostStatus(postId, post_id, status);
+      const response = await PostsService.updatePostStatus(postId, facebook_post_id, instagram_post_id, status_facebook, status_instagram);
       res.json(response);
     } catch (error) {
       res.status(500).json({

@@ -193,59 +193,63 @@ class PostsService {
     }
   }
 
-  async updatePostStatus(postId, post_id, status) {
+  async updatePostStatus(
+  postId,
+  facebook_post_id,
+  instagram_post_id,
+  status_facebook,
+  status_instagram
+  ) {
     try {
+      const now = TimezoneUtils.now().toDate();
+
+      // 1️⃣ Update trạng thái tổng trong Post
       const statusData = {
-        status,
-        platform_post_id: post_id,
-        published_at: status === 'published' ? TimezoneUtils.now().toDate() : null,
-        updated_at: TimezoneUtils.now().toDate()
+        status: (status_facebook === 'published' || status_instagram === 'published')
+          ? 'published'
+          : 'failed',
+        published_at: (status_facebook === 'published' || status_instagram === 'published')
+          ? now : null,
+        updated_at: now,
       };
 
-      const [updatedRowsCount] = await Post.update(statusData, {
-        where: { id: postId }
-      });
+      await Post.update(statusData, { where: { id: postId } });
 
-      if (updatedRowsCount === 0) {
-        throw new Error(`Post with id ${postId} not found`);
+      // 2️⃣ Update PlatformPost cho từng nền tảng
+
+      if (facebook_post_id) {
+        await PlatformPost.update(
+          {
+            status: status_facebook,
+            published_at: status_facebook === 'published' ? now : null,
+            updated_at: now
+          },
+          {
+            where: { post_id: postId, platform: 'facebook' }
+          }
+        );
       }
 
-      // Sau khi update thì trả về post đã được cập nhật
-      // Also persist a PlatformPost record for tracking per-platform posts
-      try {
-        if (post_id) {
-          // Determine platform from input or fallback
-          const platform = (typeof status === 'string' && status.includes(':'))
-            ? status.split(':')[1]
-            : null;
-
-          // Fetch post to pull content/platform if needed
-          const parentPost = await Post.findByPk(postId);
-
-          await PlatformPost.create({
-            post_id: postId,
-            platform_post_id: post_id,
-            platform: platform || (Array.isArray(parentPost?.platform) ? parentPost.platform[0] : (typeof parentPost?.platform === 'string' ? (function(p){
-              try { const parsed = JSON.parse(p); return Array.isArray(parsed) ? parsed[0] : p; } catch(e){ return (p.includes(',') ? p.split(',')[0].trim() : p); }
-            })(parentPost.platform) : 'facebook')),
-            content: parentPost?.content || '',
-            status,
-            published_at: status === 'published' ? new Date() : null,
-            metadata: null,
-            created_at: new Date(),
-            updated_at: new Date()
-          });
-        }
-      } catch (e) {
-        // non-fatal: log and continue
-        console.warn('Failed to create PlatformPost record:', e.message);
+      if (instagram_post_id) {
+        await PlatformPost.update(
+          {
+            status: status_instagram,
+            published_at: status_instagram === 'published' ? now : null,
+            updated_at: now
+          },
+          {
+            where: { post_id: postId, platform: 'instagram' }
+          }
+        );
       }
 
       return await this.getPostById(postId);
+
     } catch (error) {
       throw new Error(`Error updating post status: ${error.message}`);
     }
   }
+
 
   async deletePost(postId) {
     try {

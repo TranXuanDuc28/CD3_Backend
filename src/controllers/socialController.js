@@ -56,7 +56,7 @@ class SocialController {
 
         // Update parent post status if original_post_id exists
         if (postData.original_post_id) {
-          await Post.update({ status: response.success ? 'published' : 'failed', platform_post_id: response.postId }, { where: { id: postData.original_post_id } });
+          await Post.update({ status: response.success ? 'published' : 'failed' }, { where: { id: postData.original_post_id } });
         }
       } catch (e) {
         console.warn('Could not persist PlatformPost for facebook:', e.message);
@@ -124,7 +124,7 @@ class SocialController {
         });
 
         if (postData.original_post_id) {
-          await Post.update({ status: response.success ? 'published' : 'failed', platform_post_id: response.postId }, { where: { id: postData.original_post_id } });
+          await Post.update({ status: response.success ? 'published' : 'failed'}, { where: { id: postData.original_post_id } });
         }
       } catch (e) {
         console.warn('Could not persist PlatformPost for instagram:', e.message);

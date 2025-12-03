@@ -22,7 +22,6 @@ class TokensController {
           // access_token: token.access_token,
           token_type: token.token_type,
           expires_at: token.expires_at,
-          scope: token.scope,
           user_id: token.user_id
         };
       });
