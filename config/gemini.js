@@ -12,7 +12,6 @@ const modelConfig = {
   maxOutputTokens: 1024,
 };
 
-
 // Safety settings
 const safetySettings = [
   {

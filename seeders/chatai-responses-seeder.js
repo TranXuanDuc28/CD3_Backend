@@ -20,7 +20,6 @@ const chatAIResponses = [
   { keyword: 'hotline', response_text: 'Hotline hỗ trợ 24/7 của chúng tôi là: 0123-456-789 📞', category: 'contact' },
   { keyword: 'email', response_text: 'Bạn có thể gửi mail cho chúng tôi qua địa chỉ: contact@fanpage.com 📧', category: 'contact' },
 
-  
    // Services & Support
   // Travel information
   { keyword: 'địa điểm', response_text: 'Chúng tôi có nhiều điểm đến hấp dẫn như Đà Nẵng, Hội An, Nha Trang, Phú Quốc. Bạn quan tâm đến địa điểm nào? ✈️', category: 'travel' },

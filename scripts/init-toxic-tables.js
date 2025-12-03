@@ -19,7 +19,6 @@ async function initToxicTables() {
       multipleStatements: true
     });
 
-    
     console.log('✅ Connected to database');
 
     // Read and execute SQL file

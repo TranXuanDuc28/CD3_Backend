@@ -30,6 +30,26 @@ app.use((req, res, next) => {
 app.use('/api', apiRoutes);
 
 // Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Facebook Comment Auto-Reply Backend API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      process_comments: 'POST /api/comments/process',
+      mark_handled: 'POST /api/comments/mark-handled',
+      check_handled: 'POST /api/comments/check-handled',
+      unhandled: 'GET /api/comments/unhandled',
+      save_posts: 'POST /api/posts/save',
+      generate_response: 'POST /api/ai/generate-response',
+      analytics_summary: 'GET /api/analytics/summary',
+      analytics_trend: 'GET /api/analytics/sentiment-trend',
+      analytics_keywords: 'GET /api/analytics/keywords',
+      analytics_dashboard: 'GET /api/analytics/dashboard'
+    }
+  });
+});
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -67,7 +87,10 @@ async function startServer() {
         console.log('✅ Sequelize models synced');
       } catch (err) {
         console.error('❌ Failed to sync Sequelize models:', err.message);
-        process.exit(1);
+        console.error('Continuing without syncing models. To avoid this, set AUTO_SYNC=false or fix model definitions.');
+        // NOTE: We do not exit here to allow the server to continue running for debugging.
+        // If you prefer to stop on sync errors, restore process.exit(1) below.
+        // process.exit(1);
       }
     }
 

@@ -15,7 +15,6 @@ async function checkTimezone() {
 
     console.log('🔍 Checking MySQL timezone configuration...\n');
 
-    
     // Check current timezone settings
     const [globalTz] = await connection.execute("SELECT @@global.time_zone as global_timezone");
     const [sessionTz] = await connection.execute("SELECT @@session.time_zone as session_timezone");

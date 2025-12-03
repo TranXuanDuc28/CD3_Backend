@@ -2,7 +2,6 @@ const { sequelize } = require('../models');
 
 // Import all seeders
 const seedAIPrompts = require('./ai-prompts-seeder');
-const seedSpamPatterns = require('./spam-patterns-seeder');
 const seedSentimentKeywords = require('./sentiment-keywords-seeder');
 const seedToxicKeywords = require('./toxic-keywords-seeder');
 const seedChatAIResponses = require('./chatai-responses-seeder');
@@ -19,13 +18,9 @@ async function runAllSeeders() {
     await sequelize.sync({ force: false });
     console.log('✅ Database tables synced.');
     
-    
     // Run seeders in order
     await seedAIPrompts();
     console.log('✅ AI Prompts seeded.');
-    
-    await seedSpamPatterns();
-    console.log('✅ Spam Patterns seeded.');
     
     await seedSentimentKeywords();
     console.log('✅ Sentiment Keywords seeded.');
@@ -63,7 +58,6 @@ if (require.main === module) {
 module.exports = {
   runAllSeeders,
   seedAIPrompts,
-  seedSpamPatterns,
   seedSentimentKeywords,
   seedToxicKeywords,
   seedChatAIResponses

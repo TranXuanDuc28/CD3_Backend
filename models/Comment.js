@@ -14,7 +14,6 @@ function convertToMySQLDateTime(isoString) {
   }
 }
 
-
 class Comment {
   // Save Facebook post
   static async savePost(postData) {

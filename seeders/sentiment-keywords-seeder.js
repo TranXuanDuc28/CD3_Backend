@@ -16,7 +16,6 @@ const sentimentKeywords = [
   { keyword: 'chính hãng', sentiment: 'positive', weight: 1.5, category: 'product' },
   { keyword: 'uy tín', sentiment: 'positive', weight: 2.0, category: 'service' },
   
-  
   // Negative keywords
   { keyword: 'tệ', sentiment: 'negative', weight: 2.0, category: 'general' },
   { keyword: 'kém', sentiment: 'negative', weight: 1.5, category: 'general' },

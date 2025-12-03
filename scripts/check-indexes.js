@@ -14,7 +14,6 @@ async function checkIndexes() {
       const model = models[modelName];
       const tableName = model.getTableName();
       
-      
       // Get indexes from model definition
       const indexes = model.options.indexes || [];
       const foreignKeys = [];

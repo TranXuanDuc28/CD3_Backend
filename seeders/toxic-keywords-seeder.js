@@ -14,7 +14,6 @@ const toxicKeywords = [
   { keyword: 'vl', category: 'profanity', severity: 2.0 },
   { keyword: 'cl', category: 'profanity', severity: 2.5 },
   
-  
   // Insults (Xúc phạm)
   { keyword: 'ngu', category: 'insult', severity: 2.0 },
   { keyword: 'ngu như', category: 'insult', severity: 2.5 },

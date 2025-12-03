@@ -13,7 +13,6 @@ class TemplateEngine {
     if (!template || typeof template !== 'string') {
       return template;
     }
-    
 
     let processedTemplate = template;
 

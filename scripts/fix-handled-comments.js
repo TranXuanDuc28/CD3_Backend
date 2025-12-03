@@ -17,7 +17,6 @@ async function fixHandledComments() {
       multipleStatements: true
     });
 
-    
     console.log('✅ Connected to database');
 
     // Check table structure

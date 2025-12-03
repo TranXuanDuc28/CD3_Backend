@@ -19,7 +19,6 @@ async function initSentimentTables() {
       multipleStatements: true
     });
 
-    
     console.log('✅ Connected to database');
 
     // Read and execute SQL file
@@ -36,7 +35,7 @@ async function initSentimentTables() {
       SELECT TABLE_NAME 
       FROM information_schema.TABLES 
       WHERE TABLE_SCHEMA = ? 
-      AND TABLE_NAME IN ('comment_analysis', 'spam_patterns', 'sentiment_keywords')
+      AND TABLE_NAME IN ('comment_analysis', 'sentiment_keywords')
     `, [process.env.DB_NAME || 'fb_comment_db']);
 
     console.log('📊 Verified tables:');
@@ -45,11 +44,9 @@ async function initSentimentTables() {
     });
 
     // Check data
-    const [spamCount] = await connection.query('SELECT COUNT(*) as count FROM spam_patterns');
     const [keywordCount] = await connection.query('SELECT COUNT(*) as count FROM sentiment_keywords');
 
     console.log('\n📈 Data inserted:');
-    console.log(`   ✓ Spam patterns: ${spamCount[0].count}`);
     console.log(`   ✓ Sentiment keywords: ${keywordCount[0].count}`);
 
     console.log('\n🎉 Sentiment analysis initialization completed successfully!');
