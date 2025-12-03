@@ -44,6 +44,7 @@ class CommentService {
       sentiment_score: analysis?.sentiment_score || null,
       moderation_action: analysis?.moderation_action || 'none',
       is_toxic: analysis?.is_toxic || false,
+      toxic_category: analysis?.toxic_category || null,
       keywords: analysis?.keywords || null,
       status: this.resolveStatus(handled, analysis)
     };
@@ -80,6 +81,8 @@ class CommentService {
       const limit = Math.min(Math.max(parseInt(query.limit, 10) || 10, 1), 100);
       const offset = (page - 1) * limit;
       const search = query.search?.trim();
+      const sentiment = query.sentiment?.trim();
+      const toxic = query.toxic?.trim();
 
       const whereClauses = [];
       if (search) {
@@ -89,6 +92,20 @@ class CommentService {
             { message: { [Op.like]: `%${search}%` } },
             { comment_id: { [Op.like]: `%${search}%` } }
           ]
+        });
+      }
+
+      // Sentiment filter
+      if (sentiment && sentiment !== 'all') {
+        whereClauses.push({
+          '$analysis.sentiment$': sentiment
+        });
+      }
+
+      // Toxic filter
+      if (toxic && toxic !== 'all') {
+        whereClauses.push({
+          '$analysis.is_toxic$': toxic === 'true'
         });
       }
 

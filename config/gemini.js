@@ -19,7 +19,7 @@ const safetySettings = [
     threshold: "BLOCK_MEDIUM_AND_ABOVE",
   },
   {
-    category: "HARM_CATEGORY_HATE_SPEECH", 
+    category: "HARM_CATEGORY_HATE_SPEECH",
     threshold: "BLOCK_MEDIUM_AND_ABOVE",
   },
   {
@@ -48,7 +48,7 @@ async function generateResponse(userMessage, systemPrompt, chatHistory = []) {
 
     // Combine system prompt with user message
     const vietnameseInstruction = "QUAN TRỌNG: Trả lời bằng tiếng Việt. Không bao giờ trả lời bằng tiếng Anh.\n\n";
-    const fullPrompt = systemPrompt 
+    const fullPrompt = systemPrompt
       ? `${vietnameseInstruction}${systemPrompt}\n\nTin nhắn từ khách hàng: ${userMessage}`
       : `${vietnameseInstruction}Tin nhắn từ khách hàng: ${userMessage}`;
 
@@ -89,11 +89,19 @@ async function generateResponse(userMessage, systemPrompt, chatHistory = []) {
       error: null
     };
   } catch (error) {
-    console.error('❌ Gemini API error:', error.response?.data || error.message);
+    const errorMsg = error.response?.data?.error?.message || error.message;
+    const isQuotaError = errorMsg.includes('quota') || error.response?.status === 429 || errorMsg.includes('RESOURCE_EXHAUSTED');
+
+    if (isQuotaError) {
+      console.warn('⚠️ Gemini Quota Exceeded:', errorMsg);
+    } else {
+      console.error('❌ Gemini API error:', error.response?.data || error.message);
+    }
+
     return {
       success: false,
       response: null,
-      error: error.message
+      error: errorMsg
     };
   }
 }
@@ -107,7 +115,7 @@ async function generateSimpleResponse(userMessage, systemPrompt) {
     }
 
     const vietnameseInstruction = "QUAN TRỌNG: Trả lời bằng tiếng Việt. Không bao giờ trả lời bằng tiếng Anh.\n\n";
-    const fullPrompt = systemPrompt 
+    const fullPrompt = systemPrompt
       ? `${vietnameseInstruction}${systemPrompt}\n\nTin nhắn từ khách hàng: ${userMessage}`
       : `${vietnameseInstruction}Tin nhắn từ khách hàng: ${userMessage}`;
 
