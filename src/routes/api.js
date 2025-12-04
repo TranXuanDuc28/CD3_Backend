@@ -4,15 +4,15 @@ const CommentController = require('../controllers/CommentController');
 const AnalyticsController = require('../controllers/AnalyticsController');
 // const ModerationController = require('../controllers/ModerationController'); // ❌ DISABLED: Removing moderation
 
-const postsController = require('../controllers/posts.controller');
-const tokensController = require('../controllers/tokens.controller');
-const uploadController = require('../controllers/upload.controller');
-const socialController = require('../controllers/social.controller');
-const engagementController = require('../controllers/engagement.controller');
-const mailController = require('../controllers/mail.controller');
-const generateController = require('../controllers/generate.controller');
+const postsController = require('../controllers/postsController');
+const tokensController = require('../controllers/tokensController');
+const uploadController = require('../controllers/uploadController');
+const socialController = require('../controllers/socialController');
+const engagementController = require('../controllers/engagementController');
+const mailController = require('../controllers/mailController');
+const generateController = require('../controllers/generateController');
 const VisualController = require('../controllers/visualController');
-const ChatAIController = require('../controllers/ChatAIController');
+const ChatAIController = require('../controllers/chatAIController');
 
 // Health check
 router.get('/health', (req, res) => {
@@ -58,8 +58,8 @@ router.get('/analytics/dashboard', AnalyticsController.getDashboard);
 //--------------------------------------Xuan Duc----------------------------
 router.post('/generate-content-gemini', postsController.generateContentWithGemini);
 router.get('/posts/:postId', postsController.getPostById);
-// Delete post
-router.delete('/posts/:postId', postsController.deletePost);
+// Delete post (function not implemented yet)
+// router.delete('/posts/:postId', postsController.deletePost);
 router.get('/get-all-posts', postsController.getAllPosts);
 router.post('/posts/update-status', postsController.updatePostStatus);
 router.post('/list-to-check', postsController.getPostsToCheck);
@@ -78,10 +78,10 @@ router.post('/post-to-facebook', socialController.postToFacebook);
 router.post('/post-to-instagram', socialController.postToInstagram);
 
 router.post('/get-engagement', engagementController.getEngagement);
-// Get low engagement posts (threshold query param)
-router.get('/engagement/low', engagementController.getLowEngagement);
-// Get engagement records for a specific post
-router.get('/engagement/post/:postId', engagementController.getEngagementForPost);
+// Get low engagement posts (threshold query param) - NOT IMPLEMENTED YET
+// router.get('/engagement/low', engagementController.getLowEngagement);
+// Get engagement records for a specific post - NOT IMPLEMENTED YET
+// router.get('/engagement/post/:postId', engagementController.getEngagementForPost);
 
 router.post('/send-mail', mailController.sendMail);
 
