@@ -21,6 +21,22 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+function parseCheckTimeToMinutes(str) {
+  // "5 phút" => 5, "1 ngày" => 1440
+  const match = str.match(/(\d+(\.\d+)?)\s*(ngày|giờ|phút)/i);
+  if (!match) return 0;
+
+  const value = parseFloat(match[1]);
+  const unit = match[3].toLowerCase();
+
+  switch (unit) {
+    case 'ngày': return value * 24 * 60;
+    case 'giờ': return value * 60;
+    case 'phút': return value;
+    default: return 0;
+  }
+}
+
 class VisualService {
   // Tạo banner bằng Gemini API chuẩn như curl
   // static async generateBanner(prompt, size = '1200x630', variants = 1) {
@@ -63,21 +79,17 @@ class VisualService {
   //   return images;
   // }
 
-  static async generateBanner(prompt, size = "1200x630", variants = 1) {
+  static async generateBanner(size = "1200x630", variants = []) {
     const images = [];
     const [width, height] = size.split("x").map(Number);
 
-    const extractSignature = (text) => {
-      let clean = text.replace(/[^\p{L}\p{N}\s]/gu, "").trim();
-      const words = clean.split(/\s+/);
-      return removeAccents(words.slice(-3).join(" "));
-    };
+    for (let i = 0; i < variants.length; i++) {
+      const variant = variants[i];
+      const basePrompt = variant.prompt; // prompt_image từ AI
 
-    for (let i = 0; i < variants; i++) {
-      const variantPrompt = `Hãy thêm một vài chữ đặc trưng cho ảnh: ${prompt} - Phiên bản ${
-        i + 1
-      }`;
-      const signatureText = extractSignature(prompt);
+      if (!basePrompt) continue;
+
+      const variantPrompt = `${basePrompt}. Style: High quality, professional banner, version ${i + 1}`;
 
       console.log("Generating image with prompt:", variantPrompt);
 
@@ -99,27 +111,8 @@ class VisualService {
 
       const imgBuffer = Buffer.from(b64Data, "base64");
 
-      // Thêm signature rõ ràng bằng Sharp
-      const svgText = `
-        <svg width="${width}" height="${height}">
-          <style>
-            .signature {
-              fill: white;
-              font-size: 42px;
-              font-weight: bold;
-              font-family: 'Arial, sans-serif';
-              text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
-            }
-          </style>
-          <text x="${width - 30}" y="${
-        height - 30
-      }" text-anchor="end" class="signature">${signatureText}</text>
-        </svg>
-      `;
-
       const processedImg = await sharp(imgBuffer)
         .resize(width, height)
-        .composite([{ input: Buffer.from(svgText), top: 0, left: 0 }])
         .png()
         .toBuffer();
 
@@ -128,22 +121,20 @@ class VisualService {
         "../generated",
         `banner-${Date.now()}-${i}.png`
       );
+
       await fs.mkdir(path.dirname(tmpPath), { recursive: true });
       await fs.writeFile(tmpPath, processedImg);
 
       const cloudRes = await cloudinary.uploader.upload(tmpPath, {
         folder: "banners",
-        use_filename: true,
-        unique_filename: true,
-        overwrite: true,
       });
 
-      console.log("Uploaded to Cloudinary:", cloudRes.secure_url);
       images.push(cloudRes.secure_url);
     }
 
     return images;
   }
+
   static async processImage(imageUrl, dimensions) {
     const [width, height] = (dimensions || "1920x1080").split("x").map(Number);
 
@@ -204,27 +195,20 @@ class VisualService {
   static async listToCheck(checkTime = null) {
     console.log("Fetching A/B tests to check...");
     try {
-      let timeToCheck;
+      // checkTime có thể là "5 phút", "1 ngày", "3 giờ"
+      const minutesToSubtract = parseCheckTimeToMinutes(checkTime); // hàm parse trả về số phút
+      const nowVN = TimezoneUtils.now();
+      const cutoffTime = TimezoneUtils.subtract(nowVN, minutesToSubtract, 'minute');
+      const cutoffTimeDB = TimezoneUtils.toDatabaseFormat(cutoffTime);
 
-      if (checkTime) {
-        // Sử dụng thời gian từ FE và convert sang Vietnam timezone
-        timeToCheck = new Date(checkTime);
-        console.log("Using checkTime from FE (Vietnam time):", timeToCheck);
-      } else {
-        // Fallback về thời gian mặc định nếu không có input (2 phút trước)
-        timeToCheck = TimezoneUtils.subtract(
-          TimezoneUtils.now(),
-          3,
-          "minutes"
-        ).toDate();
-        console.log("Using default checkTime (Vietnam time):", timeToCheck);
-      }
+      console.log('cutoffTime for DB query:', cutoffTimeDB);
+
 
       let abTests = await AbTest.findAll({
         where: {
-          checked: true,
+          checked: false,
           status: "running",
-          scheduledAt: { [Op.lte]: timeToCheck },
+          scheduledAt: { [Op.lte]: cutoffTimeDB },
         },
         attributes: ["id", "notifyEmail"],
       });

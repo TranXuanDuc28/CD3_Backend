@@ -11,7 +11,7 @@ class FacebookService {
     for (const imageUrl of imageUrls) {
       const url = `${FB_GRAPH_URL}/${PAGE_ID}/photos`;
       const { data } = await axios.post(url, null, {
-        params: { url: imageUrl, published: false, access_token: ACCESS_TOKEN },
+        params: { url: imageUrl.url, message: imageUrl.message, published: false, access_token: ACCESS_TOKEN },
       });
 
       attachedMedia.push({ media_fbid: data.id });
@@ -83,8 +83,7 @@ class FacebookService {
       }
       // Throw a clearer error for callers
       throw new Error(
-        `Failed to fetch engagement for post ${postId}: ${
-          error.response ? JSON.stringify(error.response.data) : error.message
+        `Failed to fetch engagement for post ${postId}: ${error.response ? JSON.stringify(error.response.data) : error.message
         }`
       );
     }

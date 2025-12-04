@@ -4,29 +4,44 @@ require('dotenv').config();
 const axios = require("axios");
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const TimezoneUtils = require('../utils/timezone');
+function parseCheckTimeToMinutes(str) {
+  // "5 phút" => 5, "1 ngày" => 1440
+  const match = str.match(/(\d+(\.\d+)?)\s*(ngày|giờ|phút)/i);
+  if (!match) return 0;
+
+  const value = parseFloat(match[1]);
+  const unit = match[3].toLowerCase();
+
+  switch (unit) {
+    case 'ngày': return value * 24 * 60;
+    case 'giờ': return value * 60;
+    case 'phút': return value;
+    default: return 0;
+  }
+}
 
 class PostsService {
 
-//  async getPostsByStatus(status) {
-//     try {
-//       const posts = await Post.findAll({
-//         where: { status },
-//         include: [
-//           {
-//             model: PlatformPost,
-//             as: 'platformPosts'
-//           }
-//         ],
-//         order: [['created_at', 'DESC']]
-//       });
+  //  async getPostsByStatus(status) {
+  //     try {
+  //       const posts = await Post.findAll({
+  //         where: { status },
+  //         include: [
+  //           {
+  //             model: PlatformPost,
+  //             as: 'platformPosts'
+  //           }
+  //         ],
+  //         order: [['created_at', 'DESC']]
+  //       });
 
-//       return posts;
-//     } catch (error) {
-//       throw new Error(`Error fetching posts by status: ${error.message}`);
-//     }
-//   }
-// Generate AI response with chat history
- async generateResponse(prompt) {
+  //       return posts;
+  //     } catch (error) {
+  //       throw new Error(`Error fetching posts by status: ${error.message}`);
+  //     }
+  //   }
+  // Generate AI response with chat history
+  async generateResponse(prompt) {
     if (!prompt) throw new Error("Content is required");
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -194,11 +209,11 @@ class PostsService {
   }
 
   async updatePostStatus(
-  postId,
-  facebook_post_id,
-  instagram_post_id,
-  status_facebook,
-  status_instagram
+    postId,
+    facebook_post_id,
+    instagram_post_id,
+    status_facebook,
+    status_instagram
   ) {
     try {
       const now = TimezoneUtils.now().toDate();
@@ -264,48 +279,37 @@ class PostsService {
   }
 
   async getPostsToCheck(checkTime = null) {
-    console.log('getPostsToCheck called with checkTime:', checkTime);
     try {
-      let timeToCheck;
-      
-      if (checkTime) {
-        // Sử dụng thời gian từ FE và convert sang Vietnam timezone
-        timeToCheck = new Date(checkTime);
-        console.log('Using checkTime from FE (Vietnam time):', timeToCheck);
-      } else {
-        // Fallback về thời gian mặc định nếu không có input (10 phút trước)
-        timeToCheck = TimezoneUtils.subtract(TimezoneUtils.now(), 3, 'minutes').toDate();
-        console.log('Using default checkTime (Vietnam time):', timeToCheck);
-      }
-      
+      // checkTime có thể là "5 phút", "1 ngày", "3 giờ"
+      const minutesToSubtract = parseCheckTimeToMinutes(checkTime); // hàm parse trả về số phút
+      const nowVN = TimezoneUtils.now();
+      const cutoffTime = TimezoneUtils.subtract(nowVN, minutesToSubtract, 'minute');
+      const cutoffTimeDB = TimezoneUtils.toDatabaseFormat(cutoffTime);
+
+      console.log('cutoffTime for DB query:', cutoffTimeDB);
+
       const posts = await Post.findAll({
         where: {
           status: 'published',
-          published_at: {
-            [Op.lte]: timeToCheck
-          }
+          published_at: { [Op.lte]: cutoffTimeDB }
         },
         include: [
           {
             model: PlatformPost,
             as: 'platformPosts',
-            where: {
-              status: 'published',
-              checked: false
-           
-            },
-           
+            where: { status: 'published', checked: false }
           }
         ],
         order: [['published_at', 'ASC']]
       });
-      console.log('posts', posts);
 
       return posts;
+
     } catch (error) {
       throw new Error(`Error fetching posts to check: ${error.message}`);
     }
   }
+
 
   async getPostsByStatus(status) {
     try {

@@ -112,4 +112,12 @@ router.get("/ab-test/running", VisualController.getRunningTests);
 router.get("/ab-test/results", VisualController.getAbTestResults);
 router.get("/ab-test/analytics", VisualController.getPerformanceAnalytics);
 
+// API tạo variants tự động cho A/B test
+router.post("/ab-test/generate-variants", VisualController.generateAbTestVariants);
+
+// API tạo carousel variants với AI (tạo variants thực sự khác nhau)
+router.post("/ab-test/generate-carousel-variants", VisualController.generateCarouselAbTestVariants);
+
+
+
 module.exports = router;

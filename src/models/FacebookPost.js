@@ -10,7 +10,6 @@ module.exports = (sequelize) => {
     post_id: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      unique: true
     },
     page_id: {
       type: DataTypes.STRING(100),

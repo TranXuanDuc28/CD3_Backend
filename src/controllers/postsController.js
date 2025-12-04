@@ -4,6 +4,7 @@ const PostsService = require('../services/postsService');
 const { generateEmbedding } = require('../services/geminiService');
 const TimezoneUtils = require('../utils/timezone');
 
+
 class PostsController {
   async getUnpublishedPosts(req, res) {
     try {
@@ -86,8 +87,8 @@ class PostsController {
   async getPostsToCheck(req, res) {
     try {
       const { checkTime } = req.body; // Nhận thời gian từ FE
-      console.log('checkTime', checkTime);  
-      const posts = await PostsService.getPostsToCheck(checkTime);
+      console.log('checkTime parsed:', checkTime); 
+      const posts = await PostsService.getPostsToCheck( checkTime);
 
       res.json(posts);
     } catch (error) {
@@ -101,7 +102,7 @@ class PostsController {
   // POST /api/schedule-post
   async schedulePost(req, res) {
     try {
-      const { title, useAI, content, topic, media, platform, scheduledAt } = req.body;
+      const { title, useAI, content, topic, mediaUrl, platform, scheduledAt } = req.body;
       console.log('Received schedulePost request:', req.body);
 
       // Validate required fields
@@ -118,7 +119,7 @@ class PostsController {
         content,
         topic,
         useAI: useAI || false,
-        media: media || null,
+        media: mediaUrl || null,
         platform: Array.isArray(platform) ? platform.join(',') : platform,
         status: scheduledAt ? 'scheduled' : 'pending',
         published_at: scheduledAt ? new Date(scheduledAt) : null,
