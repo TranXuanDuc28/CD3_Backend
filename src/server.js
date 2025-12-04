@@ -12,18 +12,30 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ======================
-// CORS giới hạn domain
+// CORS cho phép nhiều domain
 // ======================
-const allowedOrigin = process.env.CLIENT_URL;
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map(o => o.trim())
+  : [];
 
 app.use(
   cors({
-    origin: allowedOrigin,               // chỉ chấp nhận 1 domain
+    origin: function (origin, callback) {
+      // Cho phép request từ Postman hoặc server-side (origin = undefined)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error(`❌ CORS blocked: ${origin} không được phép`));
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true                    // cho phép cookies, token qua header
+    credentials: true
   })
 );
+
 
 // Body parser
 app.use(bodyParser.json({ limit: '10mb' }));
@@ -75,7 +87,7 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log('\n🚀 ========================================');
       console.log(`✅ Server chạy tại http://localhost:${PORT}`);
-      console.log(`🔐 CORS chỉ cho phép: ${allowedOrigin}`);
+      console.log(`🔐 CORS chỉ cho phép: ${allowedOrigins}`);
       console.log('🔗 ========================================\n');
     });
 

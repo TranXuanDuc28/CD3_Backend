@@ -4,29 +4,44 @@ require('dotenv').config();
 const axios = require("axios");
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const TimezoneUtils = require('../utils/timezone');
+function parseCheckTimeToMinutes(str) {
+  // "5 phút" => 5, "1 ngày" => 1440
+  const match = str.match(/(\d+(\.\d+)?)\s*(ngày|giờ|phút)/i);
+  if (!match) return 0;
+
+  const value = parseFloat(match[1]);
+  const unit = match[3].toLowerCase();
+
+  switch (unit) {
+    case 'ngày': return value * 24 * 60;
+    case 'giờ': return value * 60;
+    case 'phút': return value;
+    default: return 0;
+  }
+}
 
 class PostsService {
 
-//  async getPostsByStatus(status) {
-//     try {
-//       const posts = await Post.findAll({
-//         where: { status },
-//         include: [
-//           {
-//             model: PlatformPost,
-//             as: 'platformPosts'
-//           }
-//         ],
-//         order: [['created_at', 'DESC']]
-//       });
+  //  async getPostsByStatus(status) {
+  //     try {
+  //       const posts = await Post.findAll({
+  //         where: { status },
+  //         include: [
+  //           {
+  //             model: PlatformPost,
+  //             as: 'platformPosts'
+  //           }
+  //         ],
+  //         order: [['created_at', 'DESC']]
+  //       });
 
-//       return posts;
-//     } catch (error) {
-//       throw new Error(`Error fetching posts by status: ${error.message}`);
-//     }
-//   }
-// Generate AI response with chat history
- async generateResponse(prompt) {
+  //       return posts;
+  //     } catch (error) {
+  //       throw new Error(`Error fetching posts by status: ${error.message}`);
+  //     }
+  //   }
+  // Generate AI response with chat history
+  async generateResponse(prompt) {
     if (!prompt) throw new Error("Content is required");
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -193,59 +208,63 @@ class PostsService {
     }
   }
 
-  async updatePostStatus(postId, post_id, status) {
+  async updatePostStatus(
+    postId,
+    facebook_post_id,
+    instagram_post_id,
+    status_facebook,
+    status_instagram
+  ) {
     try {
+      const now = TimezoneUtils.now().toDate();
+
+      // 1️⃣ Update trạng thái tổng trong Post
       const statusData = {
-        status,
-        platform_post_id: post_id,
-        published_at: status === 'published' ? TimezoneUtils.now().toDate() : null,
-        updated_at: TimezoneUtils.now().toDate()
+        status: (status_facebook === 'published' || status_instagram === 'published')
+          ? 'published'
+          : 'failed',
+        published_at: (status_facebook === 'published' || status_instagram === 'published')
+          ? now : null,
+        updated_at: now,
       };
 
-      const [updatedRowsCount] = await Post.update(statusData, {
-        where: { id: postId }
-      });
+      await Post.update(statusData, { where: { id: postId } });
 
-      if (updatedRowsCount === 0) {
-        throw new Error(`Post with id ${postId} not found`);
+      // 2️⃣ Update PlatformPost cho từng nền tảng
+
+      if (facebook_post_id) {
+        await PlatformPost.update(
+          {
+            status: status_facebook,
+            published_at: status_facebook === 'published' ? now : null,
+            updated_at: now
+          },
+          {
+            where: { post_id: postId, platform: 'facebook' }
+          }
+        );
       }
 
-      // Sau khi update thì trả về post đã được cập nhật
-      // Also persist a PlatformPost record for tracking per-platform posts
-      try {
-        if (post_id) {
-          // Determine platform from input or fallback
-          const platform = (typeof status === 'string' && status.includes(':'))
-            ? status.split(':')[1]
-            : null;
-
-          // Fetch post to pull content/platform if needed
-          const parentPost = await Post.findByPk(postId);
-
-          await PlatformPost.create({
-            post_id: postId,
-            platform_post_id: post_id,
-            platform: platform || (Array.isArray(parentPost?.platform) ? parentPost.platform[0] : (typeof parentPost?.platform === 'string' ? (function(p){
-              try { const parsed = JSON.parse(p); return Array.isArray(parsed) ? parsed[0] : p; } catch(e){ return (p.includes(',') ? p.split(',')[0].trim() : p); }
-            })(parentPost.platform) : 'facebook')),
-            content: parentPost?.content || '',
-            status,
-            published_at: status === 'published' ? new Date() : null,
-            metadata: null,
-            created_at: new Date(),
-            updated_at: new Date()
-          });
-        }
-      } catch (e) {
-        // non-fatal: log and continue
-        console.warn('Failed to create PlatformPost record:', e.message);
+      if (instagram_post_id) {
+        await PlatformPost.update(
+          {
+            status: status_instagram,
+            published_at: status_instagram === 'published' ? now : null,
+            updated_at: now
+          },
+          {
+            where: { post_id: postId, platform: 'instagram' }
+          }
+        );
       }
 
       return await this.getPostById(postId);
+
     } catch (error) {
       throw new Error(`Error updating post status: ${error.message}`);
     }
   }
+
 
   async deletePost(postId) {
     try {
@@ -260,48 +279,37 @@ class PostsService {
   }
 
   async getPostsToCheck(checkTime = null) {
-    console.log('getPostsToCheck called with checkTime:', checkTime);
     try {
-      let timeToCheck;
-      
-      if (checkTime) {
-        // Sử dụng thời gian từ FE và convert sang Vietnam timezone
-        timeToCheck = new Date(checkTime);
-        console.log('Using checkTime from FE (Vietnam time):', timeToCheck);
-      } else {
-        // Fallback về thời gian mặc định nếu không có input (10 phút trước)
-        timeToCheck = TimezoneUtils.subtract(TimezoneUtils.now(), 3, 'minutes').toDate();
-        console.log('Using default checkTime (Vietnam time):', timeToCheck);
-      }
-      
+      // checkTime có thể là "5 phút", "1 ngày", "3 giờ"
+      const minutesToSubtract = parseCheckTimeToMinutes(checkTime); // hàm parse trả về số phút
+      const nowVN = TimezoneUtils.now();
+      const cutoffTime = TimezoneUtils.subtract(nowVN, minutesToSubtract, 'minute');
+      const cutoffTimeDB = TimezoneUtils.toDatabaseFormat(cutoffTime);
+
+      console.log('cutoffTime for DB query:', cutoffTimeDB);
+
       const posts = await Post.findAll({
         where: {
           status: 'published',
-          published_at: {
-            [Op.lte]: timeToCheck
-          }
+          published_at: { [Op.lte]: cutoffTimeDB }
         },
         include: [
           {
             model: PlatformPost,
             as: 'platformPosts',
-            where: {
-              status: 'published',
-              checked: false
-           
-            },
-           
+            where: { status: 'published', checked: false }
           }
         ],
         order: [['published_at', 'ASC']]
       });
-      console.log('posts', posts);
 
       return posts;
+
     } catch (error) {
       throw new Error(`Error fetching posts to check: ${error.message}`);
     }
   }
+
 
   async getPostsByStatus(status) {
     try {
