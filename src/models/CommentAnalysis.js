@@ -15,18 +15,17 @@ module.exports = (sequelize) => {
     has_link: { type: DataTypes.BOOLEAN, defaultValue: false },
     has_tag: { type: DataTypes.BOOLEAN, defaultValue: false },
     language: { type: DataTypes.STRING(10), defaultValue: 'vi' },
-    sentiment: { type: DataTypes.ENUM('positive','negative','neutral','mixed'), defaultValue: 'neutral' },
-    sentiment_score: { type: DataTypes.DECIMAL(3,2), allowNull: true },
-    confidence_score: { type: DataTypes.DECIMAL(3,2), allowNull: true },
+    sentiment: { type: DataTypes.ENUM('positive', 'negative', 'neutral', 'mixed'), defaultValue: 'neutral' },
+    sentiment_score: { type: DataTypes.DECIMAL(3, 2), allowNull: true },
+    confidence_score: { type: DataTypes.DECIMAL(3, 2), allowNull: true },
     keywords: { type: DataTypes.JSON, allowNull: true },
     analyzed_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     is_toxic: { type: DataTypes.BOOLEAN, defaultValue: false },
     toxic_category: { type: DataTypes.STRING(50), allowNull: true },
-    toxic_score: { type: DataTypes.DECIMAL(3,2), defaultValue: 0.00 },
-    moderation_action: { type: DataTypes.ENUM('none','hide','delete','manual_review'), defaultValue: 'none' },
+    toxic_score: { type: DataTypes.DECIMAL(3, 2), defaultValue: 0.00 },
+    moderation_action: { type: DataTypes.ENUM('none', 'delete', 'manual_review'), defaultValue: 'none' },
     moderated_at: { type: DataTypes.DATE, allowNull: true }
   }, {
-    
     tableName: 'comment_analysis',
     timestamps: false,
     indexes: [
