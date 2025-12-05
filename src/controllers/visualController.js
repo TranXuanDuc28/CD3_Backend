@@ -456,28 +456,42 @@ class VisualController {
   // }
   static async generate(req, res) {
     try {
-      const { size, variants } = req.body;
-      let parsedVariants = variants;
+      let input = req.body;
 
-      if (typeof variants === "string") {
-        try {
-          parsedVariants = JSON.parse(variants);
-        } catch {
-          return res.status(400).json({ error: "Invalid variants format" });
-        }
+      // Nếu là object thì chuyển thành array
+      if (!Array.isArray(input)) {
+        input = [input];
       }
 
-      if (!Array.isArray(parsedVariants)) {
-        return res.status(400).json({ error: "Variants must be an array" });
-      }
+      const first = input[0];
+      console.log("Received generate request:", first);
 
-      const images = await VisualService.generateBanner(size, parsedVariants);
+      const size = first.size || "1200x630";
 
-      res.json({ success: true, images });
+      const variants = first.variants.map(v => ({
+        prompt: v.prompt_image,
+        index: v.index,
+      }));
+
+      const generatedUrls = await VisualService.generateBanner(size, variants);
+
+      const allImages = generatedUrls.map((url, i) => ({
+        url,
+        message: variants[i].prompt
+      }));
+
+      return res.json({
+        success: true,
+        abTestId: first.abTestId,
+        images: allImages
+      });
+
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("Generate Error:", error);
+      return res.status(500).json({ error: error.message });
     }
   }
+
 
 
   static async processImage(req, res) {
@@ -523,7 +537,7 @@ class VisualController {
 
   static async startAbTest(req, res) {
     try {
-      const { abTestId, projectId, variants, multiImages } = req.body;
+      const { abTestId, projectId, variants, multiImages, message } = req.body;
       console.log("Starting A/B test with:", req.body);
 
       if (!projectId) {
@@ -574,28 +588,28 @@ class VisualController {
           platformPostIds: [...currentPostIds, ...postIds],
         });
       }
-      //else if (Array.isArray(variants) && variants.length > 0) {
-      //   // Đăng từng ảnh riêng lẻ (mỗi ảnh 1 bài)
-      //   for (const imageUrl of variants) {
-      //     const postId = await FacebookService.postImageWithMessage(
-      //       imageUrl,
-      //       message
-      //     );
-      //     const v = await AbTestVariant.create({
-      //       abTestId: abTest.id,
-      //       imageUrl,
-      //       postId,
-      //     });
-      //     createdVariants.push(v);
-      //   }
+      else if (Array.isArray(variants) && variants.length > 0) {
+        // Đăng từng ảnh riêng lẻ (mỗi ảnh 1 bài)
+        for (const v of variants) {
+          const postId = await FacebookService.postImageWithMessage(
+            v.url,
+            message
+          );
+          const createdVariant = await AbTestVariant.create({
+            abTestId: abTest.id,
+            imageUrl: v.url,
+            postId,
+          });
+          createdVariants.push(createdVariant);
+        }
 
-      //   // Lưu tất cả postId vào abTest
-      //   await abTest.update({
-      //     scheduledAt: new Date(),
-      //     checked: true,
-      //     platformPostIds: createdVariants.map((v) => v.postId),
-      //   });
-      // } 
+        // Lưu tất cả postId vào abTest
+        await abTest.update({
+          scheduledAt: new Date(),
+          checked: true,
+          platformPostIds: createdVariants.map((v) => v.postId),
+        });
+      }
       else {
         return res
           .status(400)
