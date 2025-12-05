@@ -60,6 +60,18 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(255),
         allowNull: true,
       },
+      isSpecialOccasion: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        field: "is_special_occasion",
+        comment: "Whether this post is for a special occasion (triggers Messenger notifications)",
+      },
+      specialOccasionType: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        field: "special_occasion_type",
+        comment: "Type of special occasion (Tết, Noel, Black Friday, etc.)",
+      },
       published_at: {
         type: DataTypes.DATE,
         allowNull: true,

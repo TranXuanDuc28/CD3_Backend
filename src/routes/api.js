@@ -148,5 +148,60 @@ router.post("/ab-test/generate-variants", VisualController.generateAbTestVariant
 router.post("/ab-test/generate-carousel-variants", VisualController.generateCarouselAbTestVariants);
 
 
+// ⭐ Messenger Webhook Routes
+const WebhookController = require('../controllers/webhookController');
+router.get('/webhook/facebook', WebhookController.verifyWebhook);
+router.post('/webhook/facebook', WebhookController.handleFacebookWebhook);
+
+// ⭐ Notification Management Routes
+const NotificationService = require('../services/notificationService');
+router.get('/notifications/stats', async (req, res) => {
+  try {
+    const stats = await NotificationService.getStatistics();
+    res.json({ success: true, stats });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/notifications/logs/:postId/:postType', async (req, res) => {
+  try {
+    const { postId, postType } = req.params;
+    const logs = await NotificationService.getNotificationLogs(postId, postType);
+    res.json({ success: true, logs });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ⭐ Manual Trigger for Notifications (for n8n)
+router.post('/notifications/trigger', async (req, res) => {
+  try {
+    const { postId, postType, postUrl, message, occasionType } = req.body;
+
+    if (!postId || !postType || !postUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: postId, postType, postUrl'
+      });
+    }
+
+    const results = await NotificationService.notifyRecentCustomers({
+      postType,
+      postId,
+      postUrl,
+      message: message || 'Chúng tôi vừa có bài đăng mới!',
+      occasionType: occasionType || 'Sự kiện đặc biệt'
+    });
+
+    res.json({
+      success: true,
+      message: `Sent notifications to ${results.filter(r => r.status === 'sent').length} customers`,
+      results
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 module.exports = router;

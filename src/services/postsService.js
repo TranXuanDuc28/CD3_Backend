@@ -4,6 +4,7 @@ require('dotenv').config();
 const axios = require("axios");
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const TimezoneUtils = require('../utils/timezone');
+const NotificationService = require('./notificationService');
 function parseCheckTimeToMinutes(str) {
   // "5 phút" => 5, "1 ngày" => 1440
   const match = str.match(/(\d+(\.\d+)?)\s*(ngày|giờ|phút)/i);
@@ -123,7 +124,7 @@ class PostsService {
               {
                 model: Engagement,
                 as: 'engagements',
-                required: true
+                required: false
               }
             ]
           }
@@ -258,7 +259,27 @@ class PostsService {
         );
       }
 
-      return await this.getPostById(postId);
+      const updatedPost = await this.getPostById(postId);
+
+      // ⭐ Trigger Notification if Special Occasion and Published
+      if (updatedPost && updatedPost.isSpecialOccasion && updatedPost.status === 'published') {
+        // Get Facebook Post ID if available
+        const fbPost = updatedPost.platformPosts?.find(p => p.platform === 'facebook');
+        const fbPostId = fbPost?.platform_post_id;
+        const postUrl = fbPostId ? `https://facebook.com/${fbPostId}` : null;
+
+        if (postUrl) {
+          NotificationService.notifyRecentCustomers({
+            postType: 'post',
+            postId: updatedPost.id,
+            postUrl: postUrl,
+            message: `🎉 ${updatedPost.specialOccasionType || 'Sự kiện đặc biệt'}: ${updatedPost.title}`,
+            occasionType: updatedPost.specialOccasionType
+          }).catch(err => console.error('Notification trigger failed:', err));
+        }
+      }
+
+      return updatedPost;
 
     } catch (error) {
       throw new Error(`Error updating post status: ${error.message}`);

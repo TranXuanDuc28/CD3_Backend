@@ -77,6 +77,8 @@ const models = {
   , ChatAIConversation: ChatAIConversation(sequelize)
   , ChatAIResponse: ChatAIResponse(sequelize)
   , ChatAIAnalytics: ChatAIAnalytics(sequelize)
+  , CustomerMessage: require('./CustomerMessage')(sequelize)
+  , NotificationLog: require('./NotificationLog')(sequelize)
 };
 
 // Setup associations if provided by model definitions
