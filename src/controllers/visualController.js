@@ -189,8 +189,7 @@ class VisualController {
       }
 
       // Forward **1 lần duy nhất** cho carousel
-      const webhookUrl =
-        "https://n8n.nhom8.id.vn/webhook-test/8bf7bb62-0884-405f-87d8-533b7de85b28";
+      const webhookUrl = process.env.N8N_WEBHOOK_URL;
       await axios.post(webhookUrl, responseData, {
         headers: { "Content-Type": "application/json" },
       });
