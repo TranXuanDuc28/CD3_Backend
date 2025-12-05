@@ -42,6 +42,16 @@ module.exports = (sequelize) => {
         type: DataTypes.JSON,
         allowNull: true,
       },
+      isSpecialOccasion: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: "Whether this A/B test is for a special occasion (triggers Messenger notifications)",
+      },
+      specialOccasionType: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        comment: "Type of special occasion (Tết, Noel, Black Friday, etc.)",
+      },
       checked: {
         type: DataTypes.BOOLEAN,
         allowNull: false,

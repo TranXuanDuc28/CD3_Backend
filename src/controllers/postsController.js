@@ -4,6 +4,7 @@ const PostsService = require('../services/postsService');
 const { generateEmbedding } = require('../services/geminiService');
 const TimezoneUtils = require('../utils/timezone');
 
+
 class PostsController {
   async getUnpublishedPosts(req, res) {
     try {
@@ -31,7 +32,7 @@ class PostsController {
       console.error("Controller error:", err);
       res.status(500).json({ error: err.message });
     }
-}
+  }
   // GET /api/get-all-posts
   async getAllPosts(req, res) {
     try {
@@ -48,9 +49,9 @@ class PostsController {
   async getPostById(req, res) {
     try {
       const { postId } = req.params;
-      
+
       const post = await Post.findByPk(postId);
-      
+
       if (!post) {
         return res.status(404).json({
           success: false,
@@ -70,12 +71,9 @@ class PostsController {
   // POST /api/posts/update-status
   async updatePostStatus(req, res) {
     try {
-      const { postId, post_id, status } = req.body;
-      console.log("postId", postId);
-      console.log("post_id", post_id);
-      console.log("status", status);
+      const { postId, facebook_post_id, instagram_post_id, status_facebook, status_instagram } = req.body;
 
-      const response = await PostsService.updatePostStatus(postId, post_id, status);
+      const response = await PostsService.updatePostStatus(postId, facebook_post_id, instagram_post_id, status_facebook, status_instagram);
       res.json(response);
     } catch (error) {
       res.status(500).json({
@@ -89,7 +87,7 @@ class PostsController {
   async getPostsToCheck(req, res) {
     try {
       const { checkTime } = req.body; // Nhận thời gian từ FE
-      console.log('checkTime', checkTime);  
+      console.log('checkTime parsed:', checkTime);
       const posts = await PostsService.getPostsToCheck(checkTime);
 
       res.json(posts);
@@ -104,7 +102,7 @@ class PostsController {
   // POST /api/schedule-post
   async schedulePost(req, res) {
     try {
-      const { title, useAI, content, topic, media, platform, scheduledAt } = req.body;
+      const { title, useAI, content, topic, mediaUrl, platform, scheduledAt } = req.body;
       console.log('Received schedulePost request:', req.body);
 
       // Validate required fields
@@ -121,9 +119,11 @@ class PostsController {
         content,
         topic,
         useAI: useAI || false,
-        media: media || null,
+        media: mediaUrl || null,
         platform: Array.isArray(platform) ? platform.join(',') : platform,
         status: scheduledAt ? 'scheduled' : 'pending',
+        isSpecialOccasion: req.body.isSpecialOccasion || false,
+        specialOccasionType: req.body.specialOccasionType || null,
         published_at: scheduledAt ? new Date(scheduledAt) : null,
         created_at: TimezoneUtils.now().toDate(),
         updated_at: TimezoneUtils.now().toDate()

@@ -1,4 +1,4 @@
-const { SpamPattern, CommentAnalysis } = require('../models');
+const { CommentAnalysis } = require('../models');
 const { Op } = require('sequelize');
 
 class TextProcessingService {
@@ -7,7 +7,6 @@ class TextProcessingService {
     return text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
   }
 
-  
   // Remove links
   static removeLinks(text) {
     return text.replace(/(https?:\/\/[^\s]+)/g, '')
@@ -65,69 +64,6 @@ class TextProcessingService {
     cleaned = this.removeSpecialChars(cleaned);
     cleaned = this.normalize(cleaned);
     return cleaned;
-  }
-
-  // Check if message is spam
-  static async isSpam(text) {
-    try {
-      // Load spam patterns từ database
-      const patterns = await SpamPattern.findAll({ where: { is_active: true }, attributes: ['pattern_type','pattern_value'], raw: true });
-
-      const lowerText = text.toLowerCase();
-
-      for (const pattern of patterns) {
-        switch (pattern.pattern_type) {
-          case 'keyword':
-            if (lowerText.includes(pattern.pattern_value.toLowerCase())) {
-              return true;
-            }
-            break;
-
-          case 'regex':
-            const regex = new RegExp(pattern.pattern_value, 'i');
-            if (regex.test(text)) {
-              return true;
-            }
-            break;
-
-          case 'domain':
-            if (lowerText.includes(pattern.pattern_value.toLowerCase())) {
-              return true;
-            }
-            break;
-
-          case 'phone':
-            const phoneRegex = new RegExp(pattern.pattern_value);
-            if (phoneRegex.test(text)) {
-              return true;
-            }
-            break;
-        }
-      }
-
-      // Additional heuristics
-      // Too many uppercase letters
-      const uppercaseRatio = (text.match(/[A-Z]/g) || []).length / text.length;
-      if (uppercaseRatio > 0.7 && text.length > 10) {
-        return true;
-      }
-
-      // Too many repeated characters
-      if (/(.)\1{5,}/.test(text)) {
-        return true;
-      }
-
-      // Too short (likely spam)
-      if (text.trim().length < 3) {
-        return true;
-      }
-
-      return false;
-
-    } catch (error) {
-      console.error('Error checking spam:', error.message);
-      return false;
-    }
   }
 
   // Check if duplicate

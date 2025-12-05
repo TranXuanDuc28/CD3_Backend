@@ -1,6 +1,8 @@
 const VisualService = require("../services/visualService");
 const FacebookService = require("../services/facebookService");
 const EmailService = require("../services/emailService");
+const AIVariantService = require("../services/aiVariantService");
+const NotificationService = require("../services/notificationService");
 const { Visual, AbTest, AbTestVariant } = require("../models");
 const TimezoneUtils = require("../utils/timezone");
 const dayjs = require("dayjs");
@@ -244,32 +246,142 @@ class VisualController {
   //     res.status(500).json({ error: error.message });
   //   }
   // }
-  // Giai đoạn 1: Sinh ảnh cho từng slide
+  // Generate carousel images
+  // Supports three modes:
+  // 1. Simple: { prompt, variantCount, dimensions, brand, style }
+  // 2. Slides: { slides: [{brand, message, style, dimensions}] }
+  // 3. Variants: { variants: [{prompt, dimensions, slideNumber, ...}] } - from AI generation
+  // Returns: { success: true, images: [url1, url2, ...] }
   static async generateCarouselImages(req, res) {
     try {
-      let carousels = req.body; // dùng let thay vì const
+      const { slides, variants } = req.body;
 
-      // Nếu người dùng gửi object đơn lẻ, bọc thành mảng
-      if (!Array.isArray(carousels)) {
-        carousels = [carousels];
-      }
-      console.log("Received generateCarouselImages request:", carousels);
-      const allImages = [];
-      for (const carousel of carousels) {
-        const { variants } = carousel;
-        const images = [];
-        for (const slide of variants) {
-          const generated = await VisualService.generateBanner(
-            slide.prompt,
-            slide.dimensions,
-            1
-          );
-          images.push({ slideNumber: slide.slideNumber, image: generated[0] });
+      // Mode 1: Variants array from AI (has prompt field)
+      if (Array.isArray(variants) && variants.length > 0) {
+        console.log(`Generating carousel with ${variants.length} AI variants:`, variants);
+
+        const allImages = [];
+
+        // Process each variant - variants already have prompt field
+        for (const variant of variants) {
+          const {
+            prompt,
+            dimensions = "1200x630",
+            message,
+          } = variant;
+
+          if (!prompt || !prompt.trim()) {
+            console.warn("Skipping variant without prompt:", variant);
+            continue;
+          }
+
+          // Use the prompt directly (already formatted by AI)
+          const variantArray = [{
+            prompt: prompt,
+          }];
+
+          // Generate image for this variant
+          const images = await VisualService.generateBanner(dimensions, variantArray);
+
+          if (images && images.length > 0) {
+            allImages.push({
+              url: images[0],
+              message: message || prompt, // Use message if available, fallback to prompt
+            });
+          }
         }
-        allImages.push(images);
+
+        return res.json({
+          success: true,
+          images: allImages, // Changed from 'images' to 'variantImages'
+          count: allImages.length,
+          mode: "variants",
+        });
       }
-      res.json({ success: true, allImages });
+
+      // Mode 2: Slides array (manual input)
+      if (Array.isArray(slides) && slides.length > 0) {
+        console.log(`Generating carousel with ${slides.length} slides:`, slides);
+
+        const allImages = [];
+
+        // Process each slide
+        for (const slide of slides) {
+          const {
+            brand = "VKU",
+            message,
+            style = "refreshing",
+            dimensions = "1200x630",
+          } = slide;
+
+          if (!message || !message.trim()) {
+            console.warn("Skipping slide without message:", slide);
+            continue;
+          }
+
+          // Create variant for this slide
+          const variantArray = [{
+            prompt: `${brand} brand: ${message}. Style: ${style}, professional carousel slide`,
+          }];
+
+          // Generate image for this slide
+          const images = await VisualService.generateBanner(dimensions, variantArray);
+
+          if (images && images.length > 0) {
+            allImages.push(images[0]);
+          }
+        }
+
+        return res.json({
+          success: true,
+          images: allImages,
+          count: allImages.length,
+          mode: "slides",
+        });
+      }
+
+      // Mode 3: Simple prompt (generate variants)
+      const {
+        prompt,
+        variantCount = 3,
+        dimensions = "1200x630",
+        brand = "VKU",
+        style = "refreshing",
+      } = req.body;
+
+      if (!prompt || !prompt.trim()) {
+        return res.status(400).json({
+          error: "Either 'variants', 'slides' array or 'prompt' is required"
+        });
+      }
+
+      console.log("Generating carousel images with:", {
+        prompt,
+        variantCount,
+        dimensions,
+        brand,
+        style,
+      });
+
+      // Create variants array for generateBanner
+      const variantArray = [];
+      for (let i = 0; i < variantCount; i++) {
+        variantArray.push({
+          prompt: `${brand} brand: ${prompt}. Style: ${style}, professional carousel slide ${i + 1}`,
+        });
+      }
+
+      // Generate all images in one call
+      const images = await VisualService.generateBanner(dimensions, variantArray);
+
+      res.json({
+        success: true,
+        images,
+        count: images.length,
+        mode: "prompt",
+      });
     } catch (error) {
+      console.error("Error generating carousel images:", error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -343,16 +455,30 @@ class VisualController {
   //   }
   // }
   static async generate(req, res) {
-    console.log("generate called with body:", req.body);
     try {
-      let { prompt, size, variants } = req.body;
-      console.log("Received generate request:", { prompt, size, variants });
-      const images = await VisualService.generateBanner(prompt, size, variants);
+      const { size, variants } = req.body;
+      let parsedVariants = variants;
+
+      if (typeof variants === "string") {
+        try {
+          parsedVariants = JSON.parse(variants);
+        } catch {
+          return res.status(400).json({ error: "Invalid variants format" });
+        }
+      }
+
+      if (!Array.isArray(parsedVariants)) {
+        return res.status(400).json({ error: "Variants must be an array" });
+      }
+
+      const images = await VisualService.generateBanner(size, parsedVariants);
+
       res.json({ success: true, images });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   }
+
 
   static async processImage(req, res) {
     try {
@@ -397,7 +523,7 @@ class VisualController {
 
   static async startAbTest(req, res) {
     try {
-      const { abTestId, projectId, variants, multiImages, message } = req.body;
+      const { abTestId, projectId, variants, multiImages } = req.body;
       console.log("Starting A/B test with:", req.body);
 
       if (!projectId) {
@@ -422,61 +548,97 @@ class VisualController {
 
       // Xử lý multiImages
       if (multiImageGroups.length > 0) {
-        for (const imageGroup of multiImageGroups) {
+        const postIds = [];
+        for (const imageUrls of multiImageGroups) {
           // imageGroup là mảng 1 chiều các URL
+          console.log("imageUrls", imageUrls);
           const postId = await FacebookService.postImagesWithMessage(
-            imageGroup,
-            message
+            imageUrls,
+            ''
           );
-
-          for (const imageUrl of imageGroup) {
-            const v = await AbTestVariant.create({
-              abTestId: abTest.id,
-              imageUrl,
-              postId,
-            });
-            createdVariants.push(v);
-          }
-
-          // Cập nhật platformPostIds (gộp vào mảng cũ nếu đã có)
-          const currentPostIds = abTest.platformPostIds || [];
-          await abTest.update({
-            scheduledAt: new Date(),
-            platformPostIds: [...currentPostIds, postId],
-          });
-        }
-      } else if (Array.isArray(variants) && variants.length > 0) {
-        // Đăng từng ảnh riêng lẻ (mỗi ảnh 1 bài)
-        for (const imageUrl of variants) {
-          const postId = await FacebookService.postImageWithMessage(
-            imageUrl,
-            message
-          );
-          const v = await AbTestVariant.create({
+          console.log("postId", postId);
+          postIds.push(postId);
+          const created = await AbTestVariant.create({
             abTestId: abTest.id,
-            imageUrl,
+            imageUrl: JSON.stringify(imageUrls.map(i => i.url)), // Lưu list URL
+            message: JSON.stringify(imageUrls.map(i => i.message)), // Lưu list caption
             postId,
           });
-          createdVariants.push(v);
+          createdVariants.push(created);
         }
 
-        // Lưu tất cả postId vào abTest
+        // Cập nhật platformPostIds (gộp vào mảng cũ nếu đã có)
+        const currentPostIds = abTest.platformPostIds || [];
         await abTest.update({
           scheduledAt: new Date(),
-          checked: true,
-          platformPostIds: createdVariants.map((v) => v.postId),
+          platformPostIds: [...currentPostIds, ...postIds],
         });
-      } else {
+      }
+      //else if (Array.isArray(variants) && variants.length > 0) {
+      //   // Đăng từng ảnh riêng lẻ (mỗi ảnh 1 bài)
+      //   for (const imageUrl of variants) {
+      //     const postId = await FacebookService.postImageWithMessage(
+      //       imageUrl,
+      //       message
+      //     );
+      //     const v = await AbTestVariant.create({
+      //       abTestId: abTest.id,
+      //       imageUrl,
+      //       postId,
+      //     });
+      //     createdVariants.push(v);
+      //   }
+
+      //   // Lưu tất cả postId vào abTest
+      //   await abTest.update({
+      //     scheduledAt: new Date(),
+      //     checked: true,
+      //     platformPostIds: createdVariants.map((v) => v.postId),
+      //   });
+      // } 
+      else {
         return res
           .status(400)
           .json({ error: "variants or multiImages array required" });
       }
 
-      res.json({
+      // ⭐ Trigger Notification if Special Occasion
+      if (createdVariants.length > 0 && abTest.isSpecialOccasion) {
+        // Use the first variant's image/message for notification preview
+        const previewVariant = createdVariants[0];
+        let previewImage = previewVariant.imageUrl;
+        let previewMessage = "Chúng tôi vừa có bài đăng mới! Xem ngay nhé";
+
+        // Handle JSON format if it's a multi-image post
+        try {
+          if (previewImage.startsWith('[')) {
+            const images = JSON.parse(previewImage);
+            previewImage = images[0];
+          }
+          if (previewVariant.message && previewVariant.message.startsWith('[')) {
+            const messages = JSON.parse(previewVariant.message);
+            previewMessage = messages[0] || previewMessage;
+          } else if (previewVariant.message) {
+            previewMessage = previewVariant.message;
+          }
+        } catch (e) {
+          console.warn('Error parsing variant data for notification:', e);
+        }
+
+        // Run in background
+        NotificationService.notifyRecentCustomers({
+          postType: 'abtest',
+          postId: abTest.id,
+          postUrl: `https://facebook.com/${previewVariant.postId}`, // Approximate URL
+          message: `🎉 ${abTest.specialOccasionType || 'Sự kiện đặc biệt'}: ${previewMessage}`,
+          occasionType: abTest.specialOccasionType
+        }).catch(err => console.error('Notification trigger failed:', err));
+      }
+
+      return res.json({
         success: true,
         abTestId: abTest.id,
         variants: createdVariants,
-        message,
       });
     } catch (error) {
       console.error(error);
@@ -512,7 +674,7 @@ class VisualController {
         const abTests = await AbTest.findAll({
           where: {
             id: t.id,
-            checked: true, // Chỉ lấy những tests chưa được checked
+            checked: false, // Chỉ lấy những tests chưa được checked
             status: "running",
           },
           include: [{ model: AbTestVariant, as: "variants" }],
@@ -536,6 +698,7 @@ class VisualController {
             // Lấy metrics từ Facebook
             const metrics = await FacebookService.getEngagement(v.postId);
             await v.update({ metrics });
+            console.log("v", v.imageUrl);
 
             results.push({
               id: v.id,
@@ -634,6 +797,110 @@ class VisualController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  // API tạo variants tự động từ message sử dụng AI
+  static async generateAbTestVariants(req, res) {
+    try {
+      const { message, variantCount = 2, strategies, type, brand, style, dimensions } = req.body;
+
+      console.log("Generating A/B test variants with:", { message, variantCount, strategies });
+
+      if (!message || !message.trim()) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Nếu không có strategies, tự động suggest
+      let selectedStrategies = strategies;
+      if (!selectedStrategies || selectedStrategies.length === 0) {
+        selectedStrategies = await AIVariantService.suggestStrategies(message);
+        console.log("Auto-suggested strategies:", selectedStrategies);
+      }
+
+      // Generate variants using AI
+      const variants = await AIVariantService.generateVariants(
+        message,
+        variantCount,
+        selectedStrategies
+      );
+
+      // Enrich variants với thông tin bổ sung
+      const enrichedVariants = variants.map((variant, index) => ({
+        ...variant,
+        variantNumber: index + 1,
+        brand: brand || "VKU",
+        style: style || "refreshing",
+        dimensions: dimensions || "1200x630",
+        type: type || "banner",
+      }));
+
+      res.json({
+        success: true,
+        variants: enrichedVariants,
+        suggestedStrategies: selectedStrategies,
+      });
+    } catch (error) {
+      console.error("Error generating A/B test variants:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  // API tạo carousel variants với AI - tạo variants thực sự khác nhau
+  static async generateCarouselAbTestVariants(req, res) {
+    try {
+      const { slides, variantCount = 2, projectId, abTestId } = req.body;
+
+      console.log("Generating carousel A/B test variants:", {
+        slideCount: slides?.length,
+        variantCount,
+        projectId,
+        abTestId
+      });
+
+      if (!Array.isArray(slides) || slides.length === 0) {
+        return res.status(400).json({ error: "Slides array is required" });
+      }
+
+      // Validate slides
+      slides.forEach((slide, index) => {
+        if (!slide.message || !slide.brand) {
+          throw new Error(`Slide ${index + 1} is missing required fields: message or brand`);
+        }
+      });
+
+      // Generate variants using AI
+      const variants = await AIVariantService.generateCarouselVariants(
+        slides,
+        variantCount
+      );
+
+      // Format response for n8n workflow
+      const formattedVariants = variants.map(variant => ({
+        projectId: projectId || "proj200",
+        abTestId: abTestId || null,
+        type: "carousel",
+        variantNumber: variant.variantNumber,
+        style: variant.style,
+        variants: variant.slides.map(slide => ({
+          slideNumber: slide.slideNumber,
+          prompt: slide.prompt,
+          message: slide.message,
+          brand: slide.brand,
+          style: slide.style,
+          dimensions: slide.dimensions,
+        })),
+      }));
+
+      res.json({
+        success: true,
+        variants: formattedVariants,
+        count: formattedVariants.length,
+      });
+    } catch (error) {
+      console.error("Error generating carousel A/B test variants:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
 }
+
 
 module.exports = VisualController;

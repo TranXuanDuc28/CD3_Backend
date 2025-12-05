@@ -10,6 +10,7 @@ module.exports = (sequelize) => {
     comment_id: {
       type: DataTypes.STRING(100),
       allowNull: false,
+      unique: true
     },
     post_id: {
       type: DataTypes.STRING(100),
@@ -19,7 +20,6 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING(100),
       allowNull: true
     },
-    
     from_id: {
       type: DataTypes.STRING(100),
       allowNull: false
@@ -64,6 +64,7 @@ module.exports = (sequelize) => {
   FacebookComment.associate = (models) => {
     FacebookComment.belongsTo(models.FacebookPost, { foreignKey: 'post_id', targetKey: 'post_id', as: 'post' });
     FacebookComment.hasOne(models.HandledComment, { foreignKey: 'comment_id', sourceKey: 'comment_id', as: 'handled' });
+    FacebookComment.hasOne(models.CommentAnalysis, { foreignKey: 'comment_id', sourceKey: 'comment_id', as: 'analysis' });
   };
 
   return FacebookComment;

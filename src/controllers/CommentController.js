@@ -2,6 +2,123 @@ const CommentService = require('../services/CommentService');
 const Logger = require('../utils/logger');
 
 class CommentController {
+  // GET /api/comments
+  static async list(req, res) {
+    try {
+      const result = await CommentService.getComments(req.query);
+      if (!result.success) {
+        return res.status(500).json(result);
+      }
+      res.json(result);
+    } catch (error) {
+      Logger.error('ListComments controller error', { error: error.message });
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  // GET /api/comments/stats
+  static async getStats(req, res) {
+    try {
+      const result = await CommentService.getCommentStats();
+      if (!result.success) {
+        return res.status(500).json(result);
+      }
+      res.json(result);
+    } catch (error) {
+      Logger.error('GetCommentStats controller error', { error: error.message });
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  // GET /api/comments/recent
+  static async getRecent(req, res) {
+    try {
+      const limit = parseInt(req.query.limit, 10) || 5;
+      const result = await CommentService.getRecentComments(limit);
+      if (!result.success) {
+        return res.status(500).json(result);
+      }
+      res.json(result);
+    } catch (error) {
+      Logger.error('GetRecentComments controller error', { error: error.message });
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  // GET /api/comments/:commentId
+  static async getComment(req, res) {
+    try {
+      const { commentId } = req.params;
+      if (!commentId) {
+        return res.status(400).json({ success: false, error: 'commentId is required' });
+      }
+      const result = await CommentService.getCommentDetails(commentId);
+      if (!result.success) {
+        const statusCode = result.error === 'Comment not found' ? 404 : 500;
+        return res.status(statusCode).json(result);
+      }
+      res.json(result);
+    } catch (error) {
+      Logger.error('GetComment controller error', { error: error.message });
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  // PATCH /api/comments/:commentId/status
+  static async updateStatus(req, res) {
+    try {
+      const { commentId } = req.params;
+      const { status, reply_id, ai_response, session_id } = req.body;
+
+      if (!commentId) {
+        return res.status(400).json({ success: false, error: 'commentId is required' });
+      }
+
+      if (!status) {
+        return res.status(400).json({ success: false, error: 'status is required' });
+      }
+
+      const result = await CommentService.updateCommentStatus(commentId, status, {
+        reply_id,
+        ai_response,
+        session_id
+      });
+
+      if (!result.success) {
+        const statusCode = result.error === 'Comment not found' ? 404 : 400;
+        return res.status(statusCode).json(result);
+      }
+
+      res.json(result);
+    } catch (error) {
+      Logger.error('UpdateStatus controller error', { error: error.message });
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  // GET /api/comments/:commentId/history
+  static async getHistory(req, res) {
+    try {
+      const { commentId } = req.params;
+      const limit = parseInt(req.query.limit, 10) || 20;
+
+      if (!commentId) {
+        return res.status(400).json({ success: false, error: 'commentId is required' });
+      }
+
+      const result = await CommentService.getCommentHistory(commentId, limit);
+      if (!result.success) {
+        const statusCode = result.error === 'Comment not found' ? 404 : 500;
+        return res.status(statusCode).json(result);
+      }
+
+      res.json(result);
+    } catch (error) {
+      Logger.error('GetHistory controller error', { error: error.message });
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
   // POST /api/comments/process
   // Process new comments and generate AI responses
   static async processComments(req, res) {
@@ -15,7 +132,6 @@ class CommentController {
         });
       }
 
-      
       const sessionId = session_id || `session_${Date.now()}`;
       const result = await CommentService.processComments(comments, sessionId);
 
