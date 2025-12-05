@@ -605,7 +605,6 @@ class VisualController {
         // Lưu tất cả postId vào abTest
         await abTest.update({
           scheduledAt: new Date(),
-          checked: true,
           platformPostIds: createdVariants.map((v) => v.postId),
         });
       }
@@ -616,37 +615,37 @@ class VisualController {
       }
 
       // ⭐ Trigger Notification if Special Occasion
-      if (createdVariants.length > 0 && abTest.isSpecialOccasion) {
-        // Use the first variant's image/message for notification preview
-        const previewVariant = createdVariants[0];
-        let previewImage = previewVariant.imageUrl;
-        let previewMessage = "Chúng tôi vừa có bài đăng mới! Xem ngay nhé";
+      // if (createdVariants.length > 0 && abTest.isSpecialOccasion) {
+      //   // Use the first variant's image/message for notification preview
+      //   const previewVariant = createdVariants[0];
+      //   let previewImage = previewVariant.imageUrl;
+      //   let previewMessage = "Chúng tôi vừa có bài đăng mới! Xem ngay nhé";
 
-        // Handle JSON format if it's a multi-image post
-        try {
-          if (previewImage.startsWith('[')) {
-            const images = JSON.parse(previewImage);
-            previewImage = images[0];
-          }
-          if (previewVariant.message && previewVariant.message.startsWith('[')) {
-            const messages = JSON.parse(previewVariant.message);
-            previewMessage = messages[0] || previewMessage;
-          } else if (previewVariant.message) {
-            previewMessage = previewVariant.message;
-          }
-        } catch (e) {
-          console.warn('Error parsing variant data for notification:', e);
-        }
+      //   // Handle JSON format if it's a multi-image post
+      //   try {
+      //     if (previewImage.startsWith('[')) {
+      //       const images = JSON.parse(previewImage);
+      //       previewImage = images[0];
+      //     }
+      //     if (previewVariant.message && previewVariant.message.startsWith('[')) {
+      //       const messages = JSON.parse(previewVariant.message);
+      //       previewMessage = messages[0] || previewMessage;
+      //     } else if (previewVariant.message) {
+      //       previewMessage = previewVariant.message;
+      //     }
+      //   } catch (e) {
+      //     console.warn('Error parsing variant data for notification:', e);
+      //   }
 
-        // Run in background
-        NotificationService.notifyRecentCustomers({
-          postType: 'abtest',
-          postId: abTest.id,
-          postUrl: `https://facebook.com/${previewVariant.postId}`, // Approximate URL
-          message: `🎉 ${abTest.specialOccasionType || 'Sự kiện đặc biệt'}: ${previewMessage}`,
-          occasionType: abTest.specialOccasionType
-        }).catch(err => console.error('Notification trigger failed:', err));
-      }
+      //   // Run in background
+      //   NotificationService.notifyRecentCustomers({
+      //     postType: 'abtest',
+      //     postId: abTest.id,
+      //     postUrl: `https://facebook.com/${previewVariant.postId}`, // Approximate URL
+      //     message: `🎉 ${abTest.specialOccasionType || 'Sự kiện đặc biệt'}: ${previewMessage}`,
+      //     occasionType: abTest.specialOccasionType
+      //   }).catch(err => console.error('Notification trigger failed:', err));
+      // }
 
       return res.json({
         success: true,
