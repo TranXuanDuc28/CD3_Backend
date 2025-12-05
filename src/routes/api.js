@@ -164,6 +164,16 @@ router.get('/notifications/stats', async (req, res) => {
   }
 });
 
+router.get('/notifications/campaigns', async (req, res) => {
+  try {
+    const { limit } = req.query;
+    const campaigns = await NotificationService.getRecentCampaigns(limit ? parseInt(limit) : 20);
+    res.json({ success: true, data: campaigns });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/notifications/logs/:postId/:postType', async (req, res) => {
   try {
     const { postId, postType } = req.params;
@@ -178,6 +188,7 @@ router.get('/notifications/logs/:postId/:postType', async (req, res) => {
 router.post('/notifications/trigger', async (req, res) => {
   try {
     const { postId, postType, postUrl, message, occasionType } = req.body;
+    console.log('Duc Received trigger request:', req.body);
 
     if (!postId || !postType || !postUrl) {
       return res.status(400).json({

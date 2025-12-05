@@ -188,6 +188,89 @@ class NotificationService {
             activeCustomers
         };
     }
+
+    /**
+     * Get all notification logs with filters
+     * @param {object} filters - Filter options
+     * @returns {Promise<Array>}
+     */
+    static async getAllNotificationLogs(filters = {}) {
+        const where = {};
+
+        if (filters.postId) where.postId = filters.postId;
+        if (filters.postType) where.postType = filters.postType;
+        if (filters.occasionType) where.occasionType = filters.occasionType;
+        if (filters.status) where.status = filters.status;
+
+        return await NotificationLog.findAll({
+            where,
+            include: [{
+                model: CustomerMessage,
+                as: 'customer',
+                attributes: ['psid', 'customerName', 'platform', 'lastMessageAt']
+            }],
+            order: [['sentAt', 'DESC']],
+            limit: 100
+        });
+    }
+
+    /**
+     * Get recent notification campaigns (grouped by post)
+     * @param {number} limit - Number of campaigns to return
+     * @returns {Promise<Array>}
+     */
+    static async getRecentCampaigns(limit = 20) {
+        const { sequelize } = require('../models');
+
+        // Get unique posts with notification counts
+        const campaigns = await NotificationLog.findAll({
+            attributes: [
+                'postId',
+                'postType',
+                'occasionType',
+                [sequelize.fn('COUNT', sequelize.col('id')), 'totalSent'],
+                [sequelize.fn('SUM', sequelize.literal("CASE WHEN status = 'sent' THEN 1 ELSE 0 END")), 'successCount'],
+                [sequelize.fn('SUM', sequelize.literal("CASE WHEN status = 'failed' THEN 1 ELSE 0 END")), 'failedCount'],
+                [sequelize.fn('MAX', sequelize.col('sentAt')), 'lastSentAt']
+            ],
+            group: ['postId', 'postType', 'occasionType'],
+            order: [[sequelize.fn('MAX', sequelize.col('sentAt')), 'DESC']],
+            limit,
+            raw: true
+        });
+
+        // Get detailed logs for each campaign
+        const detailedCampaigns = await Promise.all(
+            campaigns.map(async (campaign) => {
+                const logs = await NotificationLog.findAll({
+                    where: {
+                        postId: campaign.postId,
+                        postType: campaign.postType
+                    },
+                    include: [{
+                        model: CustomerMessage,
+                        as: 'customer',
+                        attributes: ['psid', 'customerName', 'platform']
+                    }],
+                    order: [['sentAt', 'DESC']]
+                });
+
+                return {
+                    ...campaign,
+                    recipients: logs.map(log => ({
+                        customerName: log.customer?.customerName || 'Unknown',
+                        psid: log.customer?.psid,
+                        platform: log.customer?.platform,
+                        status: log.status,
+                        sentAt: log.sentAt,
+                        errorMessage: log.errorMessage
+                    }))
+                };
+            })
+        );
+
+        return detailedCampaigns;
+    }
 }
 
 module.exports = NotificationService;

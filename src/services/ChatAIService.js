@@ -15,7 +15,7 @@ class ChatAIService {
   async getOrCreateUser(facebookId, userProfile = {}) {
     try {
       let user = await ChatAIUser.findOne({ where: { facebook_id: facebookId } });
-      
+
       if (!user) {
         user = await ChatAIUser.create({
           facebook_id: facebookId,
@@ -33,7 +33,7 @@ class ChatAIService {
         });
         this.logger.info('Updated existing ChatAI user', { userId: user.id, facebookId });
       }
-      
+
       return user;
     } catch (error) {
       this.logger.error('Error getting/creating ChatAI user', { error: error.message, facebookId });
@@ -53,14 +53,14 @@ class ChatAIService {
         facebook_message_id: facebookMessageId,
         conversation_id: conversationId
       });
-      
-      this.logger.debug('Saved ChatAI conversation', { 
-        conversationId: conversation.id, 
-        userId, 
+
+      this.logger.debug('Saved ChatAI conversation', {
+        conversationId: conversation.id,
+        userId,
         messageType,
-        messageLength: messageText.length 
+        messageLength: messageText.length
       });
-      
+
       return conversation;
     } catch (error) {
       this.logger.error('Error saving ChatAI conversation', { error: error.message, userId });
@@ -75,11 +75,11 @@ class ChatAIService {
     try {
       const conversations = await ChatAIConversation.findAll({
         where: { user_id: userId },
-        order: [['timestamp', 'DESC']],
+        order: [['timestamp', 'ASC']],
         limit: limit,
         raw: true
       });
-      
+
       // Reverse to get chronological order
       return conversations.reverse();
     } catch (error) {
@@ -101,20 +101,20 @@ class ChatAIService {
 
       // Get dynamic content from published posts
       const dynamicContent = await this.getDynamicContentFromPosts();
-      
+
       // Get A/B test insights for better responses
       const abTestInsights = await this.getABTestInsights();
-      
+
       // Combine static, dynamic, and A/B test responses
       const allResponses = [...staticResponses, ...dynamicContent, ...abTestInsights];
-      
-      this.logger.debug('Retrieved ChatAI responses', { 
+
+      this.logger.debug('Retrieved ChatAI responses', {
         static: staticResponses.length,
         dynamic: dynamicContent.length,
         abTest: abTestInsights.length,
-        total: allResponses.length 
+        total: allResponses.length
       });
-      
+
       return allResponses;
     } catch (error) {
       this.logger.error('Error getting ChatAI responses', { error: error.message });
@@ -197,7 +197,7 @@ class ChatAIService {
             if (pp.content) {
               // Extract keywords from platform post content for better matching
               const platformKeywords = this.extractKeywordsFromText(pp.content);
-              
+
               // Create response for each extracted keyword
               for (const keyword of platformKeywords) {
                 dynamicResponses.push({
@@ -213,7 +213,7 @@ class ChatAIService {
                   image_url: pp.image_url || imageUrl || null
                 });
               }
-              
+
               // Also add a general response based on post topic/title
               if (post.topic || post.title) {
                 dynamicResponses.push({
@@ -240,9 +240,9 @@ class ChatAIService {
         }
       }
 
-      this.logger.debug('Generated dynamic responses from posts', { 
+      this.logger.debug('Generated dynamic responses from posts', {
         postsProcessed: recentPosts.length,
-        responsesGenerated: dynamicResponses.length 
+        responsesGenerated: dynamicResponses.length
       });
 
       return dynamicResponses;
@@ -311,10 +311,10 @@ class ChatAIService {
    */
   extractKeywordsFromText(text) {
     if (!text || typeof text !== 'string') return [];
-    
+
     const keywords = [];
     const content = text.toLowerCase();
-    
+
     // Common Vietnamese keywords for travel, food, beauty, etc.
     const keywordPatterns = [
       // Travel keywords
@@ -329,14 +329,14 @@ class ChatAIService {
       // Service keywords
       'dịch vụ', 'tư vấn', 'hỗ trợ', 'chăm sóc khách hàng'
     ];
-    
+
     // Find matching keywords
     for (const pattern of keywordPatterns) {
       if (content.includes(pattern)) {
         keywords.push(pattern);
       }
     }
-    
+
     // Extract hashtags if any
     const hashtagMatches = text.match(/#[\w\u00C0-\u1EF9]+/g);
     if (hashtagMatches) {
@@ -344,7 +344,7 @@ class ChatAIService {
         keywords.push(tag.substring(1)); // Remove # symbol
       });
     }
-    
+
     // Extract words that might be important (longer than 3 characters)
     const words = text.match(/[\w\u00C0-\u1EF9]{4,}/g);
     if (words) {
@@ -354,7 +354,7 @@ class ChatAIService {
         }
       });
     }
-    
+
     return keywords.slice(0, 10); // Limit to 10 keywords per post
   }
 
@@ -368,7 +368,7 @@ class ChatAIService {
 
     // Extract destinations
     const destinations = ['đà nẵng', 'hội an', 'nha trang', 'phú quốc', 'sapa', 'hạ long', 'huế', 'hồ chí minh', 'hà nội'];
-    const foundDestinations = destinations.filter(dest => 
+    const foundDestinations = destinations.filter(dest =>
       content.toLowerCase().includes(dest) || title.toLowerCase().includes(dest)
     );
 
@@ -381,7 +381,7 @@ class ChatAIService {
 
     // Extract activities
     const activities = ['du lịch', 'tour', 'khách sạn', 'ăn uống', 'vui chơi', 'nghỉ dưỡng'];
-    const foundActivities = activities.filter(activity => 
+    const foundActivities = activities.filter(activity =>
       content.toLowerCase().includes(activity) || title.toLowerCase().includes(activity)
     );
 
@@ -400,10 +400,10 @@ class ChatAIService {
    */
   generateCampaignResponses(post) {
     const responses = [];
-    
+
     if (post.campaign) {
       const campaign = typeof post.campaign === 'string' ? JSON.parse(post.campaign) : post.campaign;
-      
+
       if (campaign.name) {
         responses.push({
           keyword: campaign.name.toLowerCase(),
@@ -434,7 +434,7 @@ class ChatAIService {
    */
   calculateEngagementScore(engagements) {
     if (!engagements || engagements.length === 0) return 0;
-    
+
     const totalEngagement = engagements.reduce((sum, eng) => {
       return sum + (eng.likes || 0) + (eng.comments || 0) + (eng.shares || 0);
     }, 0);
@@ -449,33 +449,33 @@ class ChatAIService {
     if (!this.model) {
       throw new Error('Gemini AI not available');
     }
-  
+
     try {
       // Xây dựng ngữ cảnh hội thoại
-      const context = conversationHistory.map(conv => 
+      const context = conversationHistory.map(conv =>
         `${conv.message_type === 'received' ? 'User' : 'Assistant'}: ${conv.message_text}`
       ).join('\n');
-  
+
       // Xây dựng ngữ cảnh từ cơ sở dữ liệu phản hồi
-      const dbContext = databaseResponses.map(resp => 
+      const dbContext = databaseResponses.map(resp =>
         `Keyword: ${resp.keyword} -> Response: ${resp.response_text}`
       ).join('\n');
-  
+
       // Phân loại phản hồi: tĩnh / động / A-B test
       const staticResponses = databaseResponses.filter(r => !r.category || !r.category.includes('dynamic'));
       const dynamicResponses = databaseResponses.filter(r => r.category && r.category.includes('dynamic'));
       const abTestResponses = databaseResponses.filter(r => r.category && r.category.includes('ab_test'));
-  
+
       // Bối cảnh từ các bài viết gần đây
-      const dynamicContext = dynamicResponses.length > 0 ? 
+      const dynamicContext = dynamicResponses.length > 0 ?
         `BÀI VIẾT GẦN ĐÂY (${dynamicResponses.length} bài):
   ${dynamicResponses.slice(0, 5).map(r => `- "${r.post_title}": ${r.response_text}`).join('\n')}` : '';
-  
+
       // Bối cảnh từ kết quả A/B test
       const abTestContext = abTestResponses.length > 0 ?
         `KẾT QUẢ A/B TEST (${abTestResponses.length} insights):
   ${abTestResponses.slice(0, 3).map(r => `- ${r.response_text}`).join('\n')}` : '';
-  
+
       // 👉 Prompt mới: phản hồi cho MỌI LĨNH VỰC
       const prompt = `Bạn là trợ lý AI của fanpage, có nhiệm vụ phản hồi bình luận hoặc tin nhắn của khách hàng về **mọi lĩnh vực** mà fanpage đăng tải: 
   du lịch, ẩm thực, làm đẹp, công nghệ, giáo dục, kinh doanh, sức khỏe, phong cách sống, v.v.
@@ -511,31 +511,31 @@ class ChatAIService {
   - Nếu không có dữ liệu phù hợp → giữ giọng lịch sự, gợi mở trò chuyện.
   
   ➡️ Hãy phản hồi cho khách hàng dựa trên thông tin thực tế và hướng dẫn trên:`;
-  
+
       // Gọi mô hình AI
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const aiResponse = response.text().trim();
-  
+
       if (!aiResponse || aiResponse.length < 10) {
         throw new Error('AI response too short or empty');
       }
-  
+
       // Ghi log thông tin phản hồi
-      this.logger.info('Generated AI response', { 
+      this.logger.info('Generated AI response', {
         messageLength: message.length,
         responseLength: aiResponse.length,
         hasHistory: conversationHistory.length > 0,
         hasDatabase: databaseResponses.length > 0
       });
-  
+
       return aiResponse;
     } catch (error) {
       this.logger.error('Error generating AI response', { error: error.message });
       throw error;
     }
   }
-  
+
 
   /**
    * Log analytics event
@@ -547,7 +547,7 @@ class ChatAIService {
         event_type: eventType,
         event_data: eventData
       });
-      
+
       this.logger.debug('Logged ChatAI analytics', { userId, eventType });
     } catch (error) {
       this.logger.error('Error logging ChatAI analytics', { error: error.message, userId });
@@ -592,11 +592,11 @@ class ChatAIService {
         is_active: true
       });
 
-      this.logger.info('Added new ChatAI response', { 
-        id: response.id, 
-        keyword, 
+      this.logger.info('Added new ChatAI response', {
+        id: response.id,
+        keyword,
         category,
-        responseLength: responseText.length 
+        responseLength: responseText.length
       });
 
       return response.id;
@@ -634,15 +634,15 @@ class ChatAIService {
       };
     } catch (error) {
       this.logger.error('Error getting ChatAI stats', { error: error.message });
-      return { 
-        users: 0, 
-        conversations: 0, 
-        active_responses: 0, 
+      return {
+        users: 0,
+        conversations: 0,
+        active_responses: 0,
         published_posts: 0,
         dynamic_responses: 0,
         ab_test_insights: 0,
         total_responses: 0,
-        gemini_available: false 
+        gemini_available: false
       };
     }
   }
@@ -653,17 +653,17 @@ class ChatAIService {
   async refreshDynamicContent() {
     try {
       this.logger.info('Refreshing dynamic content cache...');
-      
+
       const dynamicContent = await this.getDynamicContentFromPosts();
       //console.log("dynamicContent", dynamicContent)
       const abTestInsights = await this.getABTestInsights();
       console.log("abTestInsights", abTestInsights)
-      
+
       this.logger.info('Dynamic content refreshed', {
         dynamicResponses: dynamicContent.length,
         abTestInsights: abTestInsights.length
       });
-      
+
       return {
         dynamic_responses: dynamicContent.length,
         ab_test_insights: abTestInsights.length,
@@ -681,7 +681,7 @@ class ChatAIService {
   async getPostsForDynamicAnalysis(limit = 20, days = 30) {
     try {
       const dateFrom = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-      
+
       const posts = await Post.findAll({
         where: {
           status: 'published',
@@ -710,7 +710,7 @@ class ChatAIService {
         const topics = this.extractTopicsFromPost(post);
         const campaignResponses = post.campaign ? this.generateCampaignResponses(post) : [];
         const engagementScore = this.calculateEngagementScore(post.engagements);
-        
+
         return {
           id: post.id,
           title: post.title,

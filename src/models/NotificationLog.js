@@ -17,7 +17,7 @@ module.exports = (sequelize) => {
             comment: 'Foreign key to CustomerMessage'
         },
         postId: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.STRING,
             allowNull: false,
             comment: 'ID of Post or AbTest'
         },

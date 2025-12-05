@@ -16,7 +16,7 @@ class SocialService {
       const token = await tokensService.getTokenByPlatform('facebook');
       console.log("token", token.access_token);
       console.log("postData", postData);
-      
+
       if (!token) {
         throw new Error('Facebook token not found');
       }
@@ -33,7 +33,7 @@ class SocialService {
       // };
 
       // Real implementation would look like this:
-      
+
       const response = await axios.post(`${this.apiEndpoints.facebook}/me/feed`, {
         message: postData.content,
         link: postData.image_url,
@@ -45,9 +45,10 @@ class SocialService {
         postId: response.data.id,
         platform: 'facebook',
         content: postData.content,
+        postUrl: `https://www.facebook.com/${response.data.id}`,
         published_at: new Date().toISOString()
       };
-      
+
 
     } catch (error) {
       throw new Error(`Error posting to Facebook: ${error.message}`);
@@ -62,9 +63,9 @@ class SocialService {
       if (!token) {
         throw new Error('Instagram token not found');
       }
-  
+
       const igUserId = "17841477144867201"; // lấy từ Graph API (linked với page)
-  
+
       // 1. Tạo media container
       const mediaRes = await axios.post(
         `https://graph.facebook.com/v18.0/${igUserId}/media`,
@@ -78,12 +79,12 @@ class SocialService {
         }
       );
       console.log("mediaRes", mediaRes.data);
-  
+
       const creationId = mediaRes.data.id;
       console.log("creationId", creationId);
       // ✅ chờ 2 giây cho media sẵn sàng
       await new Promise(r => setTimeout(r, 2000));
-  
+
       // 2. Publish media
       const publishRes = await axios.post(
         `https://graph.facebook.com/v18.0/${igUserId}/media_publish`,
@@ -96,9 +97,9 @@ class SocialService {
         }
       );
       console.log("publishRes", publishRes.data);
-  
+
       const postId = publishRes.data.id;
-  
+
       return {
         success: true,
         postId,
@@ -106,17 +107,17 @@ class SocialService {
         content: postData.content,
         published_at: new Date().toISOString()
       };
-  
+
     } catch (error) {
-      throw new Error(`Error posting to Instagram: ${ error.message}`);
+      throw new Error(`Error posting to Instagram: ${error.message}`);
     }
   }
-  
+
 
   async postToTwitter(postData) {
     try {
       const token = await tokensService.getTokenByPlatform('twitter');
-      
+
       if (!token) {
         throw new Error('Twitter token not found');
       }
@@ -143,7 +144,7 @@ class SocialService {
   async postToLinkedIn(postData) {
     try {
       const token = await tokensService.getTokenByPlatform('linkedin');
-      
+
       if (!token) {
         throw new Error('LinkedIn token not found');
       }
@@ -166,98 +167,98 @@ class SocialService {
       throw new Error(`Error posting to LinkedIn: ${error.message}`);
     }
   }
-async getPostAnalytics(platform, postId) {
-  try {
-    const token = await tokensService.getTokenByPlatform(platform);
+  async getPostAnalytics(platform, postId) {
+    try {
+      const token = await tokensService.getTokenByPlatform(platform);
 
-    if (!token || !token.access_token) {
-      throw new Error(`${platform} token not found or invalid`);
-    }
-
-    let likes = 0, comments = 0, shares = 0;
-
-    // ===================== FACEBOOK =====================
-    if (platform === 'facebook') {
-      console.log(`📊 Fetching Facebook analytics for post ${postId}...`);
-
-      try {
-        // Chỉ lấy reactions, comments, shares
-        const baseResp = await axios.get(`https://graph.facebook.com/v19.0/${postId}`, {
-          params: {
-            fields: 'reactions.summary(true),comments.summary(true),shares',
-            access_token: token.access_token
-          }
-        });
-
-        const baseData = baseResp.data || {};
-        likes = baseData?.reactions?.summary?.total_count || 0;
-        comments = baseData?.comments?.summary?.total_count || 0;
-        shares = baseData?.shares?.count || 0;
-
-        console.log(`✅ Facebook Post ${postId} — Likes: ${likes}, Comments: ${comments}, Shares: ${shares}`);
-      } catch (err) {
-        console.warn(`⚠️ Could not fetch metrics for Facebook post ${postId}:`, err.response?.data || err.message);
+      if (!token || !token.access_token) {
+        throw new Error(`${platform} token not found or invalid`);
       }
-    }
 
-    // ===================== INSTAGRAM =====================
-    else if (platform === 'instagram') {
-      console.log(`📊 Fetching Instagram analytics for media ${postId}...`);
+      let likes = 0, comments = 0, shares = 0;
 
-      try {
-        // Instagram API v19.0 — chỉ lấy like_count và comments_count
-        const resp = await axios.get(`https://graph.facebook.com/v19.0/${postId}`, {
-          params: {
-            fields: 'like_count,comments_count',
-            access_token: token.access_token
-          }
-        });
+      // ===================== FACEBOOK =====================
+      if (platform === 'facebook') {
+        console.log(`📊 Fetching Facebook analytics for post ${postId}...`);
 
-        const data = resp.data || {};
-        likes = data.like_count || 0;
-        comments = data.comments_count || 0;
-        shares = 0; // Instagram không có shares
+        try {
+          // Chỉ lấy reactions, comments, shares
+          const baseResp = await axios.get(`https://graph.facebook.com/v19.0/${postId}`, {
+            params: {
+              fields: 'reactions.summary(true),comments.summary(true),shares',
+              access_token: token.access_token
+            }
+          });
 
-        console.log(`✅ Instagram Media ${postId} — Likes: ${likes}, Comments: ${comments}`);
-      } catch (err) {
-        console.warn(`⚠️ Could not fetch metrics for Instagram media ${postId}:`, err.response?.data || err.message);
+          const baseData = baseResp.data || {};
+          likes = baseData?.reactions?.summary?.total_count || 0;
+          comments = baseData?.comments?.summary?.total_count || 0;
+          shares = baseData?.shares?.count || 0;
+
+          console.log(`✅ Facebook Post ${postId} — Likes: ${likes}, Comments: ${comments}, Shares: ${shares}`);
+        } catch (err) {
+          console.warn(`⚠️ Could not fetch metrics for Facebook post ${postId}:`, err.response?.data || err.message);
+        }
       }
+
+      // ===================== INSTAGRAM =====================
+      else if (platform === 'instagram') {
+        console.log(`📊 Fetching Instagram analytics for media ${postId}...`);
+
+        try {
+          // Instagram API v19.0 — chỉ lấy like_count và comments_count
+          const resp = await axios.get(`https://graph.facebook.com/v19.0/${postId}`, {
+            params: {
+              fields: 'like_count,comments_count',
+              access_token: token.access_token
+            }
+          });
+
+          const data = resp.data || {};
+          likes = data.like_count || 0;
+          comments = data.comments_count || 0;
+          shares = 0; // Instagram không có shares
+
+          console.log(`✅ Instagram Media ${postId} — Likes: ${likes}, Comments: ${comments}`);
+        } catch (err) {
+          console.warn(`⚠️ Could not fetch metrics for Instagram media ${postId}:`, err.response?.data || err.message);
+        }
+      }
+
+      // ===================== OTHER PLATFORMS (mock data) =====================
+      else {
+        likes = Math.floor(Math.random() * 1000);
+        comments = Math.floor(Math.random() * 100);
+        shares = Math.floor(Math.random() * 50);
+      }
+
+      // ===================== ✅ TÍNH ENGAGEMENT SCORE =====================
+      // Công thức: likes + (comments × 2) + (shares × 3)
+      const totalEngagement = likes + comments * 2 + shares * 3;
+      const engagementScore = parseFloat(totalEngagement.toFixed(2));
+
+      const result = {
+        platform,
+        postId,
+        likes,
+        comments,
+        shares,
+        engagement_score: engagementScore,
+        last_updated: new Date().toISOString()
+      };
+
+      console.log(`📈 Engagement score for ${platform} post ${postId}: ${engagementScore}`);
+
+      return result;
+
+    } catch (error) {
+      console.error(
+        `❌ Error getting analytics for ${platform} ${postId}:`,
+        error.response?.data || error.message
+      );
+      throw new Error(`Error getting analytics: ${error.message}`);
     }
-
-    // ===================== OTHER PLATFORMS (mock data) =====================
-    else {
-      likes = Math.floor(Math.random() * 1000);
-      comments = Math.floor(Math.random() * 100);
-      shares = Math.floor(Math.random() * 50);
-    }
-
-    // ===================== ✅ TÍNH ENGAGEMENT SCORE =====================
-    // Công thức: likes + (comments × 2) + (shares × 3)
-    const totalEngagement = likes + comments * 2 + shares * 3;
-    const engagementScore = parseFloat(totalEngagement.toFixed(2));
-
-    const result = {
-      platform,
-      postId,
-      likes,
-      comments,
-      shares,
-      engagement_score: engagementScore,
-      last_updated: new Date().toISOString()
-    };
-
-    console.log(`📈 Engagement score for ${platform} post ${postId}: ${engagementScore}`);
-
-    return result;
-
-  } catch (error) {
-    console.error(
-      `❌ Error getting analytics for ${platform} ${postId}:`,
-      error.response?.data || error.message
-    );
-    throw new Error(`Error getting analytics: ${error.message}`);
   }
-}
 
 
 
@@ -361,7 +362,7 @@ async getPostAnalytics(platform, postId) {
 
       // Extract hashtags
       const hashtags = optimizedContent.match(/#\w+/g) || [];
-      
+
       // Limit hashtags
       if (hashtags.length > config.hashtags) {
         const limitedHashtags = hashtags.slice(0, config.hashtags);
