@@ -5,7 +5,7 @@ module.exports = (sequelize) => {
     "AbTestVariant",
     {
       imageUrl: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
         allowNull: false,
       },
       postId: {
